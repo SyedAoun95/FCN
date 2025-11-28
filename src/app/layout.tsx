@@ -1,25 +1,25 @@
- import React from "react";
-import Link from "next/link";
+// app/layout.tsx
 import "./globals.css";
+import Sidebar from "./components/Sidebar";
 
-
+export const metadata = {
+  title: "My App",
+  description: "Sidebar everywhere",
+};
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
+      <body className="flex">
 
-    <head>
-      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" />
-    </head>
-      <body style={{ fontFamily: "sans-serif", margin: 0 }}>
-        <header style={{ padding: "1rem", background: " #8752f1ff" }}>
-           <Link href="/dashboard" style={{color:"black"}}>Home</Link>
-           <Link href="/areas" style={{marginLeft: "1rem", color:"black"}}>Areas</Link>   
-        </header>
-        <main style={{ padding: "0.5rem" }}>{children}
+        {/* Sidebar visible on all pages */}
+        <Sidebar />
 
-
+        {/* Page Content */}
+        <main className="flex-1 min-h-screen bg-gray-50 p-6">
+          {children}
         </main>
+
       </body>
     </html>
   );
