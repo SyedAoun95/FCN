@@ -17,7 +17,7 @@ const menuItems = [
   { name: "Add Person", icon: faUserPlus, href: "/persons" },
   { name: "Remove Person", icon: faUserMinus, href: "/remove-person" },
   { name: "Update Record", icon: faPenToSquare, href: "/update-record" },
-  { name: "Find Record", icon: faSearch, href: "/find-record" },
+{ name: "Find Record", icon: faSearch, href: "/searchperson" },
   { name: "Find Person Record", icon: faClipboardList, href: "/find-person" },
 ];
 

@@ -3,7 +3,7 @@ import "./globals.css";
 import Sidebar from "./components/Sidebar";
 
 export const metadata = {
-  title: "My App",
+  title: "FCN || the  brand ",
   description: "Sidebar everywhere",
 };
 
