@@ -1,6 +1,6 @@
 // src/app/services/db.ts
 export const initDB = async () => {
-  if (typeof window === "undefined") return null;
+  if (typeof window === "undefined") return null; // only run in browser
 
   const PouchDB = (await import("pouchdb-browser")).default;
   const PouchDBFind = (await import("pouchdb-find")).default;
@@ -12,12 +12,37 @@ export const initDB = async () => {
     "http://admin:syedaoun1234@127.0.0.1:5984/db_fcn"
   );
 
-  // Sync
+  // ---------------------------
+  // LIVE TWO-WAY SYNC
+  // ---------------------------
   const syncDB = () => {
     localDB
       .sync(remoteDB, { live: true, retry: true })
       .on("change", (info) => console.log("DB Change:", info))
+      .on("paused", () => console.log("Sync paused"))
+      .on("active", () => console.log("Sync active"))
       .on("error", (err) => console.error("Sync error:", err));
+  };
+
+  // ---------------------------
+  // REAL-TIME CHANGES LISTENER
+  // ---------------------------
+  const listenChanges = (onChange: (doc: any) => void) => {
+    const changes = localDB
+      .changes({
+        since: "now",
+        live: true,
+        include_docs: true,
+      })
+      .on("change", (change) => {
+        if (change.deleted) {
+          onChange({ ...change.doc, _deleted: true });
+        } else {
+          onChange(change.doc);
+        }
+      });
+
+    return changes;
   };
 
   // ---------------------------
@@ -116,10 +141,16 @@ export const initDB = async () => {
     return result.docs;
   };
 
+  // ---------------------------
+  // AUTOMATIC SYNC ON INIT
+  // ---------------------------
+  syncDB();
+
   return {
     localDB,
     remoteDB,
     syncDB,
+    listenChanges,
     createArea,
     getAreas,
     deleteArea,
@@ -127,6 +158,6 @@ export const initDB = async () => {
     getPersonsByArea,
     updatePerson,
     deletePerson,
-    searchPersons, // <-- added
+    searchPersons,
   };
 };
