@@ -3,6 +3,7 @@
 import React from 'react';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
+  faGauge,          // <-- NEW Dashboard Icon
   faLocationDot,
   faUserPlus,
   faUserMinus,
@@ -13,11 +14,12 @@ import {
 import Link from 'next/link';
 
 const menuItems = [
+  { name: "Dashboard", icon: faGauge, href: "/dashboard" }, // <-- NEW ITEM
   { name: "Add Area", icon: faLocationDot, href: "/areas" },
   { name: "Add Person", icon: faUserPlus, href: "/persons" },
   { name: "Remove Person", icon: faUserMinus, href: "/remove-person" },
   { name: "Update Record", icon: faPenToSquare, href: "/update-record" },
-{ name: "Find Record", icon: faSearch, href: "/searchperson" },
+  { name: "Find Record", icon: faSearch, href: "/searchperson" },
   { name: "Find Person Record", icon: faClipboardList, href: "/find-person" },
 ];
 
