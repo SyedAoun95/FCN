@@ -48,15 +48,28 @@ export const initDB = async () => {
   // ---------------------------
   // AREA CRUD
   // ---------------------------
-  const createArea = async (name: string) => {
+  const createArea = async (name: string, connectionNumber?: string) => {
     if (!name.trim()) throw new Error("Area name cannot be empty");
 
-    const doc = {
+    const conn = connectionNumber !== undefined ? String(connectionNumber).trim() : "";
+
+    if (conn) {
+      // Ensure uniqueness of connectionNumber across areas
+      await localDB.createIndex({ index: { fields: ['type', 'connectionNumber'] } });
+      const existing = await localDB.find({ selector: { type: 'area', connectionNumber: conn } });
+      if (existing.docs && existing.docs.length > 0) {
+        throw new Error('Connection number already assigned to another area');
+      }
+    }
+
+    const doc: any = {
       _id: `area_${name.toLowerCase()}_${Date.now()}`,
       type: "area",
       name,
       createdAt: new Date().toISOString(),
     };
+
+    if (conn) doc.connectionNumber = conn;
 
     return localDB.put(doc);
   };

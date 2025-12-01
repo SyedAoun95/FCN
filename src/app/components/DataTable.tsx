@@ -52,6 +52,7 @@ const DataTable: React.FC = () => {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Conn #</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Area Name</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
             </tr>
@@ -59,11 +60,12 @@ const DataTable: React.FC = () => {
           <tbody className="bg-white divide-y divide-gray-200">
             {areas.length === 0 ? (
               <tr>
-                <td colSpan={2} className="px-6 py-4 text-sm text-gray-500">No areas available</td>
+                <td colSpan={3} className="px-6 py-4 text-sm text-gray-500">No areas available</td>
               </tr>
             ) : (
               areas.map((area) => (
                 <tr key={area._id} className="hover:bg-gray-50 transition-colors duration-150">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{area.connectionNumber ?? '-'}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{area.name}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{area.createdAt ? new Date(area.createdAt).toLocaleString() : '-'}</td>
                 </tr>
