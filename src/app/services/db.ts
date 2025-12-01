@@ -9,7 +9,7 @@ export const initDB = async () => {
 
   const localDB = new PouchDB("crud-database");
   const remoteDB = new PouchDB(
-    "http://admin:syedaoun1234@127.0.0.1:5984/db_fcn"
+    "http://admin:syedaoun12345@127.0.0.1:5984/db_fcn"
   );
 
   // ---------------------------
@@ -75,23 +75,64 @@ export const initDB = async () => {
   // PERSON CRUD
   // ---------------------------
   const createPerson = async (
+    connectionNumber: string | number,
     name: string,
-    number: number,
+    amount: number,
+    monthTotal: number,
     areaId: string
   ) => {
-    if (!name.trim() || !number || !areaId)
+    if (!String(connectionNumber).trim() || !name.trim() || !areaId)
       throw new Error("Invalid input");
+
+    // Prevent duplicate connection numbers (also check legacy `number` field)
+    await localDB.createIndex({ index: { fields: ["type", "connectionNumber", "number"] } });
+
+    const existing = await localDB.find({
+      selector: {
+        type: "person",
+        $or: [
+          { connectionNumber: String(connectionNumber) },
+          { number: String(connectionNumber) },
+        ],
+      },
+      limit: 1,
+    });
+
+    if (existing.docs && existing.docs.length > 0) {
+      throw new Error("Connection number already assigned");
+    }
 
     const doc = {
       _id: `person_${areaId}_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
       type: "person",
+      connectionNumber: String(connectionNumber),
       name,
-      number,
+      amount: typeof amount === 'number' ? amount : 0,
+      monthTotal: typeof monthTotal === 'number' ? monthTotal : 0,
       areaId,
       createdAt: new Date().toISOString(),
     };
 
     return localDB.put(doc);
+  };
+
+  const getPersonByConnectionNumber = async (connectionNumber: string | number) => {
+    if (!String(connectionNumber).trim()) return null;
+
+    await localDB.createIndex({ index: { fields: ["type", "connectionNumber", "number"] } });
+
+    const res = await localDB.find({
+      selector: {
+        type: "person",
+        $or: [
+          { connectionNumber: String(connectionNumber) },
+          { number: String(connectionNumber) },
+        ],
+      },
+      limit: 1,
+    });
+
+    return res.docs && res.docs.length > 0 ? res.docs[0] : null;
   };
 
   const getPersonsByArea = async (areaId: string) => {
@@ -125,7 +166,7 @@ export const initDB = async () => {
     const q = query.toLowerCase();
 
     await localDB.createIndex({
-      index: { fields: ["type", "name", "number"] },
+      index: { fields: ["type", "name", "number", "connectionNumber"] },
     });
 
     const result = await localDB.find({
@@ -134,6 +175,7 @@ export const initDB = async () => {
         $or: [
           { name: { $regex: new RegExp(q, "i") } },
           { number: { $regex: new RegExp(q, "i") } },
+          { connectionNumber: { $regex: new RegExp(q, "i") } },
         ],
       },
     });
@@ -155,6 +197,7 @@ export const initDB = async () => {
     getAreas,
     deleteArea,
     createPerson,
+    getPersonByConnectionNumber,
     getPersonsByArea,
     updatePerson,
     deletePerson,

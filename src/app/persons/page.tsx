@@ -9,7 +9,10 @@ export default function PersonsPage() {
   const [selectedArea, setSelectedArea] = useState("");
   const [persons, setPersons] = useState<any[]>([]);
   const [personName, setPersonName] = useState("");
-  const [personNumber, setPersonNumber] = useState<number>(0);
+  const [connectionNumber, setConnectionNumber] = useState<string | number>("");
+  const [amount, setAmount] = useState<number>(0);
+  const [monthTotal, setMonthTotal] = useState<number>(0);
+  const [connectionWarning, setConnectionWarning] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -34,12 +37,29 @@ export default function PersonsPage() {
   };
 
   const addPerson = async () => {
-    if (!db || !personName.trim() || !personNumber || !selectedArea) return;
-    await db.createPerson(personName, personNumber, selectedArea);
+    if (!db || !String(connectionNumber).trim() || !personName.trim() || !selectedArea)
+      return;
+
+    // double-check uniqueness before attempting create
+    try {
+      const existing = await db.getPersonByConnectionNumber(String(connectionNumber));
+      if (existing) {
+        setConnectionWarning(`Connection number already assigned to ${existing.name ?? 'another person'}`);
+        return;
+      }
+
+      await db.createPerson(connectionNumber, personName, amount || 0, monthTotal || 0, selectedArea);
+    } catch (err: any) {
+      setConnectionWarning(err?.message || 'Failed to create person');
+      return;
+    }
     const allPersons = await db.getPersonsByArea(selectedArea);
     setPersons(allPersons);
     setPersonName("");
-    setPersonNumber(0);
+    setConnectionNumber("");
+    setAmount(0);
+    setMonthTotal(0);
+    setConnectionWarning("");
   };
 
   const deletePerson = async (person: any) => {
@@ -89,6 +109,31 @@ export default function PersonsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
+                Connection Number
+              </label>
+              <input
+                type="text"
+                value={connectionNumber}
+                onChange={(e) => setConnectionNumber(e.target.value)}
+                onBlur={async () => {
+                  if (!db) return;
+                  if (!String(connectionNumber).trim()) {
+                    setConnectionWarning("");
+                    return;
+                  }
+                  const existing = await db.getPersonByConnectionNumber(String(connectionNumber));
+                  if (existing) setConnectionWarning(`Connection number already assigned to ${existing.name ?? 'another person'}`);
+                  else setConnectionWarning("");
+                }}
+                placeholder="Enter connection number..."
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 placeholder-gray-500"
+              />
+              {connectionWarning && (
+                <p className="text-sm text-red-600 mt-2">{connectionWarning}</p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Person Name
               </label>
               <input
@@ -101,13 +146,25 @@ export default function PersonsPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Person Number
+                Amount
               </label>
               <input
                 type="number"
-                value={personNumber || ""}
-                onChange={(e) => setPersonNumber(Number(e.target.value))}
-                placeholder="Enter number..."
+                value={amount || ""}
+                onChange={(e) => setAmount(Number(e.target.value))}
+                placeholder="Enter amount..."
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 placeholder-gray-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Month Total
+              </label>
+              <input
+                type="number"
+                value={monthTotal || ""}
+                onChange={(e) => setMonthTotal(Number(e.target.value))}
+                placeholder="Enter month total..."
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 placeholder-gray-500"
               />
             </div>
@@ -140,10 +197,16 @@ export default function PersonsPage() {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Connection #
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Person Name
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Number
+                      Amount
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Month Total
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
@@ -157,10 +220,16 @@ export default function PersonsPage() {
                   {persons.map((person) => (
                     <tr key={person._id} className="hover:bg-gray-50 transition-colors duration-150">
                       <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">{person.connectionNumber ?? person.number ?? '-'}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">{person.name}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">{person.number}</div>
+                        <div className="text-sm text-gray-500">{person.amount ?? 0}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-500">{person.monthTotal ?? 0}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
