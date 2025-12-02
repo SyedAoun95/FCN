@@ -9,7 +9,7 @@ export default function PersonsPage() {
   const [selectedArea, setSelectedArea] = useState("");
   const [persons, setPersons] = useState<any[]>([]);
   const [personName, setPersonName] = useState("");
-  const [areaConnectionNumber, setAreaConnectionNumber] = useState("");
+  const [personConnectionNumber, setPersonConnectionNumber] = useState("");
   const [monthlyFee, setMonthlyFee] = useState<number | ''>('');
   const [loading, setLoading] = useState(true);
 
@@ -37,24 +37,20 @@ export default function PersonsPage() {
   const addPerson = async () => {
     if (!db) return;
 
-    // If selectedArea is empty, try to find area by connection number
+    // Require an area selected for person creation
     let areaId = selectedArea;
     if (!areaId) {
-      const conn = String(areaConnectionNumber || '').trim();
-      if (!conn) {
-        alert('Please select an area or enter its connection number');
-        return;
-      }
-      const area = areas.find(a => String(a.connectionNumber) === conn);
-      if (!area) {
-        alert('No area found with that connection number');
-        return;
-      }
-      areaId = area._id;
+      alert('Please select an area for the person');
+      return;
     }
 
     if (!personName.trim()) {
       alert('Please enter person name');
+      return;
+    }
+
+    if (!personConnectionNumber.trim()) {
+      alert('Please enter a connection number for the person');
       return;
     }
 
@@ -64,12 +60,12 @@ export default function PersonsPage() {
     }
 
     try {
-      await db.createPerson(personName, areaId, Number(monthlyFee));
+      await db.createPerson(personName, areaId, personConnectionNumber.trim(), Number(monthlyFee));
       const allPersons = await db.getPersonsByArea(areaId);
       setPersons(allPersons);
       setPersonName("");
       setMonthlyFee('');
-      setAreaConnectionNumber('');
+      setPersonConnectionNumber('');
     } catch (err: any) {
       alert(err?.message || 'Failed to add person');
     }
@@ -120,12 +116,12 @@ export default function PersonsPage() {
         <h2 className="text-xl font-semibold text-gray-800 mb-4">Add New Person</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Area Connection #</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Person Connection #</label>
             <input
               type="text"
-              value={areaConnectionNumber}
-              onChange={(e) => setAreaConnectionNumber(e.target.value)}
-              placeholder="Enter area connection number..."
+              value={personConnectionNumber}
+              onChange={(e) => setPersonConnectionNumber(e.target.value)}
+              placeholder="Enter connection number for person"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 placeholder-gray-500"
             />
           </div>
@@ -179,6 +175,9 @@ export default function PersonsPage() {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Conn #
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Person Name
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -195,6 +194,9 @@ export default function PersonsPage() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {persons.map((person) => (
                     <tr key={person._id} className="hover:bg-gray-50 transition-colors duration-150">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{person.connectionNumber ?? '-'}</div>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">{person.name}</div>
                       </td>

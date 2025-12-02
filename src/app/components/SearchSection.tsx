@@ -42,14 +42,13 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearch }) => {
     }
     const list = areas.filter((a: any) => {
       const name = String(a.name || '').toLowerCase();
-      const conn = String(a.connectionNumber || '').toLowerCase();
-      return name.includes(q) || conn.includes(q);
+      return name.includes(q);
     }).slice(0, 10);
     setSuggestions(list);
   }, [searchQuery, areas]);
 
   const handleSelectArea = (area: any) => {
-    setSearchQuery(area.connectionNumber ? `${area.connectionNumber} — ${area.name}` : area.name);
+    setSearchQuery(area.name);
     setSuggestions([]);
     // pass back the selected area's id so parent can react
     onSearch(area._id);
@@ -83,8 +82,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearch }) => {
                 onClick={() => handleSelectArea(s)}
                 className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100"
               >
-                <div className="text-sm font-medium text-gray-900">{s.connectionNumber ? `${s.connectionNumber} — ${s.name}` : s.name}</div>
-                {s.connectionNumber && <div className="text-xs text-gray-500">Conn #: {s.connectionNumber}</div>}
+                <div className="text-sm font-medium text-gray-900">{s.name}</div>
               </li>
             ))}
           </ul>

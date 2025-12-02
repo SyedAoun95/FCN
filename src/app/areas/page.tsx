@@ -7,7 +7,6 @@ export default function AreasPage() {
   const [db, setDb] = useState<any>(null);
   const [areas, setAreas] = useState<any[]>([]);
   const [areaName, setAreaName] = useState("");
-  const [connectionNumber, setConnectionNumber] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,21 +25,17 @@ export default function AreasPage() {
 
   const addArea = async () => {
     if (!db) return;
-    if (!connectionNumber.trim()) {
-      alert('Please enter a connection number');
-      return;
-    }
     if (!areaName.trim()) {
       alert('Please enter an area name');
       return;
     }
 
     try {
-      await db.createArea(areaName, connectionNumber.trim());
+      await db.createArea(areaName);
       const allAreas = await db.getAreas();
       setAreas(allAreas);
       setAreaName("");
-      setConnectionNumber("");
+    
     } catch (err: any) {
       alert(err?.message || 'Failed to create area');
     }
@@ -71,14 +66,6 @@ export default function AreasPage() {
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
         <h2 className="text-xl font-semibold text-gray-800 mb-4">Add New Area</h2>
         <div className="flex gap-4">
-          <input
-            type="text"
-            value={connectionNumber}
-            onChange={(e) => setConnectionNumber(e.target.value)}
-            placeholder="Connection number"
-            className="w-40 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 placeholder-gray-500"
-          />
-
           <input
             type="text"
             value={areaName}
@@ -113,12 +100,9 @@ export default function AreasPage() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Conn #
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Area Name
-                  </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Area Name
+                    </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
@@ -130,9 +114,6 @@ export default function AreasPage() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {areas.map((area) => (
                   <tr key={area._id} className="hover:bg-gray-50 transition-colors duration-150">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{area.connectionNumber ?? '-'}</div>
-                      </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">{area.name}</div>
                       </td>

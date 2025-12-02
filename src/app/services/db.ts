@@ -48,19 +48,8 @@ export const initDB = async () => {
   // ---------------------------
   // AREA CRUD
   // ---------------------------
-  const createArea = async (name: string, connectionNumber?: string) => {
+  const createArea = async (name: string) => {
     if (!name.trim()) throw new Error("Area name cannot be empty");
-
-    const conn = connectionNumber !== undefined ? String(connectionNumber).trim() : "";
-
-    if (conn) {
-      // Ensure uniqueness of connectionNumber across areas
-      await localDB.createIndex({ index: { fields: ['type', 'connectionNumber'] } });
-      const existing = await localDB.find({ selector: { type: 'area', connectionNumber: conn } });
-      if (existing.docs && existing.docs.length > 0) {
-        throw new Error('Connection number already assigned to another area');
-      }
-    }
 
     const doc: any = {
       _id: `area_${name.toLowerCase()}_${Date.now()}`,
@@ -68,8 +57,6 @@ export const initDB = async () => {
       name,
       createdAt: new Date().toISOString(),
     };
-
-    if (conn) doc.connectionNumber = conn;
 
     return localDB.put(doc);
   };
@@ -90,16 +77,30 @@ export const initDB = async () => {
   const createPerson = async (
     name: string,
     areaId: string,
+    connectionNumber?: string,
     amount?: number
   ) => {
-    if (!name.trim() || !areaId)
-      throw new Error("Invalid input");
+    if (!name.trim() || !areaId) throw new Error("Invalid input");
+
+    const conn = connectionNumber !== undefined ? String(connectionNumber).trim() : "";
+
+    if (!conn) {
+      throw new Error('Connection number is required for a person');
+    }
+
+    // Ensure uniqueness of connectionNumber across persons
+    await localDB.createIndex({ index: { fields: ['type', 'connectionNumber'] } });
+    const existing = await localDB.find({ selector: { type: 'person', connectionNumber: conn } });
+    if (existing.docs && existing.docs.length > 0) {
+      throw new Error('Connection number already assigned to another person');
+    }
 
     const doc: any = {
       _id: `person_${areaId}_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
       type: "person",
       name,
       areaId,
+      connectionNumber: conn,
       createdAt: new Date().toISOString(),
     };
 
@@ -141,7 +142,7 @@ export const initDB = async () => {
     const q = query.toLowerCase();
 
     await localDB.createIndex({
-      index: { fields: ["type", "name", "number"] },
+      index: { fields: ["type", "name", "connectionNumber"] },
     });
 
     const result = await localDB.find({
@@ -149,7 +150,7 @@ export const initDB = async () => {
         type: "person",
         $or: [
           { name: { $regex: new RegExp(q, "i") } },
-          { number: { $regex: new RegExp(q, "i") } },
+          { connectionNumber: { $regex: new RegExp(q, "i") } },
         ],
       },
     });
