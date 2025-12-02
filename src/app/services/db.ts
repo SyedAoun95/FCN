@@ -227,7 +227,7 @@ export const initDB = async () => {
     return Object.keys(map).map((k) => ({ month: k, total: map[k] }));
   };
 
-  // ---------------------------
+  // 
   // AUTOMATIC SYNC ON INIT
   // ---------------------------
   syncDB();
