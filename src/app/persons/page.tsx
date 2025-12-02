@@ -9,7 +9,8 @@ export default function PersonsPage() {
   const [selectedArea, setSelectedArea] = useState("");
   const [persons, setPersons] = useState<any[]>([]);
   const [personName, setPersonName] = useState("");
-  const [personNumber, setPersonNumber] = useState<number>(0);
+  const [areaConnectionNumber, setAreaConnectionNumber] = useState("");
+  const [monthlyFee, setMonthlyFee] = useState<number | ''>('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -34,12 +35,44 @@ export default function PersonsPage() {
   };
 
   const addPerson = async () => {
-    if (!db || !personName.trim() || !personNumber || !selectedArea) return;
-    await db.createPerson(personName, personNumber, selectedArea);
-    const allPersons = await db.getPersonsByArea(selectedArea);
-    setPersons(allPersons);
-    setPersonName("");
-    setPersonNumber(0);
+    if (!db) return;
+
+    // If selectedArea is empty, try to find area by connection number
+    let areaId = selectedArea;
+    if (!areaId) {
+      const conn = String(areaConnectionNumber || '').trim();
+      if (!conn) {
+        alert('Please select an area or enter its connection number');
+        return;
+      }
+      const area = areas.find(a => String(a.connectionNumber) === conn);
+      if (!area) {
+        alert('No area found with that connection number');
+        return;
+      }
+      areaId = area._id;
+    }
+
+    if (!personName.trim()) {
+      alert('Please enter person name');
+      return;
+    }
+
+    if (monthlyFee === '' || Number.isNaN(Number(monthlyFee))) {
+      alert('Please enter monthly fee');
+      return;
+    }
+
+    try {
+      await db.createPerson(personName, areaId, Number(monthlyFee));
+      const allPersons = await db.getPersonsByArea(areaId);
+      setPersons(allPersons);
+      setPersonName("");
+      setMonthlyFee('');
+      setAreaConnectionNumber('');
+    } catch (err: any) {
+      alert(err?.message || 'Failed to add person');
+    }
   };
 
   const deletePerson = async (person: any) => {
@@ -82,44 +115,50 @@ export default function PersonsPage() {
         </div>
       </div>
 
-      {/* Add Person Form Card - Only show when area is selected */}
-      {selectedArea && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">Add New Person</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Person Name
-              </label>
-              <input
-                type="text"
-                value={personName}
-                onChange={(e) => setPersonName(e.target.value)}
-                placeholder="Enter person name..."
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 placeholder-gray-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Person Number
-              </label>
-              <input
-                type="number"
-                value={personNumber || ""}
-                onChange={(e) => setPersonNumber(Number(e.target.value))}
-                placeholder="Enter number..."
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 placeholder-gray-500"
-              />
-            </div>
+      {/* Add Person Form Card - enter area connection number, person name, monthly fee */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+        <h2 className="text-xl font-semibold text-gray-800 mb-4">Add New Person</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Area Connection #</label>
+            <input
+              type="text"
+              value={areaConnectionNumber}
+              onChange={(e) => setAreaConnectionNumber(e.target.value)}
+              placeholder="Enter area connection number..."
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 placeholder-gray-500"
+            />
           </div>
-          <button 
-            onClick={addPerson}
-            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-700 text-white rounded-lg hover:from-blue-700 hover:to-purple-800 transition-colors duration-200 font-medium"
-          >
-            Add Person
-          </button>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Person Name</label>
+            <input
+              type="text"
+              value={personName}
+              onChange={(e) => setPersonName(e.target.value)}
+              placeholder="Enter person name..."
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 placeholder-gray-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Monthly Fee</label>
+            <input
+              type="number"
+              value={monthlyFee === '' ? '' : monthlyFee}
+              onChange={(e) => setMonthlyFee(e.target.value === '' ? '' : Number(e.target.value))}
+              placeholder="Enter monthly fee"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 placeholder-gray-500"
+            />
+          </div>
         </div>
-      )}
+        <button
+          onClick={addPerson}
+          className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-700 text-white rounded-lg hover:from-blue-700 hover:to-purple-800 transition-colors duration-200 font-medium"
+        >
+          Add Person
+        </button>
+      </div>
 
       {/* Persons List Card - Only show when area is selected */}
       {selectedArea && (
@@ -143,7 +182,7 @@ export default function PersonsPage() {
                       Person Name
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Number
+                      Monthly Fee
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
@@ -160,7 +199,7 @@ export default function PersonsPage() {
                         <div className="text-sm font-medium text-gray-900">{person.name}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">{person.number}</div>
+                        <div className="text-sm text-gray-500">{person.amount ? `$${Number(person.amount).toFixed(2)}` : '-'}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">

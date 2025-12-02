@@ -89,20 +89,23 @@ export const initDB = async () => {
   // ---------------------------
   const createPerson = async (
     name: string,
-    number: number,
-    areaId: string
+    areaId: string,
+    amount?: number
   ) => {
-    if (!name.trim() || !number || !areaId)
+    if (!name.trim() || !areaId)
       throw new Error("Invalid input");
 
-    const doc = {
+    const doc: any = {
       _id: `person_${areaId}_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
       type: "person",
       name,
-      number,
       areaId,
       createdAt: new Date().toISOString(),
     };
+
+    if (amount !== undefined && !Number.isNaN(Number(amount))) {
+      doc.amount = Number(amount);
+    }
 
     return localDB.put(doc);
   };

@@ -44,7 +44,8 @@ export default function FindRecordPage() {
     const allPersons = await db.getPersonsByArea(selectedArea);
     const results = allPersons.filter((person: any) => 
       person.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      person.number.toString().includes(searchQuery)
+      (person.number && person.number.toString().includes(searchQuery)) ||
+      (person.amount !== undefined && String(person.amount).includes(searchQuery))
     );
     
     setSearchResults(results);
@@ -168,7 +169,7 @@ export default function FindRecordPage() {
                       Person Name
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Number
+                      Monthly Fee
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Area
@@ -188,7 +189,7 @@ export default function FindRecordPage() {
                         <div className="text-sm font-medium text-gray-900">{person.name}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">{person.number}</div>
+                        <div className="text-sm text-gray-500">{person.amount !== undefined ? `$${Number(person.amount).toFixed(2)}` : '-'}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-500">
@@ -256,7 +257,7 @@ export default function FindRecordPage() {
                         <div className="text-sm font-medium text-gray-900">{person.name}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">{person.number}</div>
+                        <div className="text-sm text-gray-500">{person.amount !== undefined ? `$${Number(person.amount).toFixed(2)}` : '-'}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
