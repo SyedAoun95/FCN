@@ -126,7 +126,8 @@ export const initDB = async () => {
   const updatePerson = async (person: any, updates: any) => {
     if (!person._id || !person._rev)
       throw new Error("_id and _rev required");
-    return localDB.put({ ...person, ...updates });
+    const updatedDoc = { ...person, ...updates, updatedAt: new Date().toISOString() };
+    return localDB.put(updatedDoc);
   };
 
   const deletePerson = async (person: any) => {
