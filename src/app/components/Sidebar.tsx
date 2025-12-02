@@ -10,6 +10,7 @@ import {
   faPenToSquare,
   faSearch,
   faClipboardList,
+  faReceipt,
 } from "@fortawesome/free-solid-svg-icons";
 import Link from 'next/link';
 
@@ -21,6 +22,7 @@ const menuItems = [
   { name: "Update Record", icon: faPenToSquare, href: "/update-record" },
   { name: "Find Record", icon: faSearch, href: "/searchperson" },
   { name: "Find Person Record", icon: faClipboardList, href: "/find-person" },
+  { name: "Cash Received", icon: faReceipt, href: "/debitNote" },
 ];
 
 const Sidebar: React.FC = () => {
@@ -35,7 +37,7 @@ const Sidebar: React.FC = () => {
           <Link
             key={index}
             href={item.href}
-            className="flex items-center px-6 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 border-l-4 border-transparent hover:border-blue-500"
+            className="flex items-center px-6 py-3 text-black hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 border-l-4 border-transparent hover:border-blue-500"
           >
             <FontAwesomeIcon icon={item.icon} className="mr-3 text-lg" />
             <span className="font-medium">{item.name}</span>
