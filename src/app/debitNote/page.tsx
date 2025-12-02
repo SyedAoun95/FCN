@@ -17,6 +17,8 @@ export default function CashReceivedPage() {
 	const [loading, setLoading] = useState(true);
 	const [connectionQuery, setConnectionQuery] = useState("");
 	const [connectionSuggestions, setConnectionSuggestions] = useState<any[]>([]);
+	const [areaQuery, setAreaQuery] = useState("");
+	const [areaSuggestions, setAreaSuggestions] = useState<any[]>([]);
 
 	useEffect(() => {
 		const setup = async () => {
@@ -139,18 +141,42 @@ export default function CashReceivedPage() {
 				<div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
 					<div className="md:col-span-1">
 						<label className="block text-sm font-medium text-gray-700 mb-2">Area</label>
-						<select
-							value={selectedArea}
-							onChange={(e) => onAreaChange(e.target.value)}
-							className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
-						>
-							<option value="">-- Select Area --</option>
-							{areas.map((a) => (
-								<option key={a._id} value={a._id}>
-									{a.name}
-								</option>
-							))}
-						</select>
+						<div className="relative">
+							<input
+								type="text"
+								value={areaQuery}
+								onChange={(e) => {
+									const q = String(e.target.value || "");
+									setAreaQuery(q);
+									if (!q) {
+										setAreaSuggestions([]);
+										return;
+									}
+									const qLower = q.toLowerCase();
+									const filtered = areas.filter((ar) => String(ar.name || "").toLowerCase().startsWith(qLower));
+									setAreaSuggestions(filtered.slice(0, 20));
+								}}
+								placeholder="Type area name (e.g. K for Karachi)"
+								className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
+							/>
+							{areaSuggestions.length > 0 && (
+								<ul className="absolute z-10 left-0 right-0 mt-1 bg-white border border-gray-200 rounded max-h-44 overflow-auto shadow-lg">
+									{areaSuggestions.map((a) => (
+										<li
+											key={a._id}
+											onClick={() => {
+												setAreaQuery(a.name || "");
+												setAreaSuggestions([]);
+												onAreaChange(a._id);
+											}}
+											className="px-4 py-2 hover:bg-blue-50 cursor-pointer text-sm text-black"
+										>
+											{a.name}
+										</li>
+									))}
+								</ul>
+							)}
+						</div>
 					</div>
 
 					<div>
@@ -185,7 +211,7 @@ export default function CashReceivedPage() {
 											<li
 												key={p._id}
 												onClick={() => onPersonSelect(p._id)}
-												className="px-4 py-2 hover:bg-blue-50 cursor-pointer text-sm"
+												className="px-4 py-2 hover:bg-blue-50 cursor-pointer text-sm text-black"
 											>
 												{label}
 											</li>
