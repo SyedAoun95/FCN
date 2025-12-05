@@ -5,11 +5,27 @@ import MetricsCards from "./components/MetricsCards";
 import SearchSection from "./components/SearchSection";
 import DataTable from "./components/DataTable";
 import { initDB } from "./services/db";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
+  const router = useRouter();
   const [metrics, setMetrics] = useState<any[] | undefined>(undefined);
+  const [authenticated, setAuthenticated] = useState<boolean | null>(null); // null = loading
+
+  // 🔐 Check login state
+  useEffect(() => {
+    const role = localStorage.getItem("role");
+    if (!role) {
+      router.push("/"); // user must login first
+      setAuthenticated(false);
+    } else {
+      setAuthenticated(true);
+    }
+  }, [router]);
 
   useEffect(() => {
+    if (!authenticated) return; // don't load data if not authenticated
+
     let cancelled = false;
     let changesHandle: any = null;
     let intervalHandle: any = null;
@@ -63,11 +79,20 @@ export default function Home() {
       }
       if (intervalHandle) clearInterval(intervalHandle);
     };
-  }, []);
+  }, [authenticated]);
 
   const handleSearch = (query: string) => {
     console.log("Searching for:", query);
   };
+
+  if (authenticated === null) {
+    // still checking auth
+    return <div>Loading...</div>;
+  }
+
+  if (authenticated === false) {
+    return null; // redirecting
+  }
 
   return (
     <>
@@ -77,4 +102,3 @@ export default function Home() {
     </>
   );
 }
-  

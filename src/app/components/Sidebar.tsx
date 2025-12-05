@@ -12,6 +12,7 @@ import {
   faClipboardList,
   faReceipt,
   faFileLines,
+  faRightToBracket,
 } from "@fortawesome/free-solid-svg-icons";
 import Link from 'next/link';
 // icons for sidebar menu
@@ -25,6 +26,8 @@ const menuItems = [
   { name: "Find Person Record", icon: faClipboardList, href: "/find-person" },
   { name: "Report Menu", icon: faFileLines, href: "/ReportMenu" },
   { name: "Cash Received", icon: faReceipt, href: "/debitNote" },
+   { name: "Login", icon: faRightToBracket, href: "/login" },
+
 ];
 
 const Sidebar: React.FC = () => {
