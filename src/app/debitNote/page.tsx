@@ -240,21 +240,23 @@ export default function CashReceivedPage() {
 					<div>
 						<label className="block text-sm font-medium text-gray-700 mb-2">Person Name</label>
 						<input 
-							type="text" 
-							value={selectedPersonName} 
-							readOnly 
-							className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-black" 
-						/>
+  type="text" 
+  value={selectedPersonName}
+  onChange={(e) => setSelectedPersonName(e.target.value)}
+  className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-black" 
+/>
+
 					</div>
 
 					<div>
 						<label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
 						<input 
-							type="text" 
-							value={selectedPersonAddress} 
-							readOnly 
-							className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-black" 
-						/>
+  type="text" 
+  value={selectedPersonAddress}
+  onChange={(e) => setSelectedPersonAddress(e.target.value)}
+  className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-black" 
+/>
+
 					</div>
 
 					<div>
