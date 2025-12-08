@@ -40,15 +40,15 @@ export default function FindRecordPage() {
     
     setIsSearching(true);
     
-    // Simulate search - you might want to implement actual search logic in your db service
-    const allPersons = await db.getPersonsByArea(selectedArea);
-    const results = allPersons.filter((person: any) => 
-      person.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (person.number && person.number.toString().includes(searchQuery)) ||
-      (person.amount !== undefined && String(person.amount).includes(searchQuery))
+    // Use the actual searchPersons function from the db service
+    const results = await db.searchPersons(searchQuery);
+    
+    // Filter results to only include persons from the selected area
+    const filteredResults = results.filter((person: any) => 
+      person.areaId === selectedArea
     );
     
-    setSearchResults(results);
+    setSearchResults(filteredResults);
     setIsSearching(false);
   };
 
@@ -65,11 +65,11 @@ export default function FindRecordPage() {
     
     // Update search results if we have an active search
     if (searchQuery.trim()) {
-      const updatedResults = allPersons.filter((p: any) => 
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.number.toString().includes(searchQuery)
+      const results = await db.searchPersons(searchQuery);
+      const filteredResults = results.filter((p: any) => 
+        p.areaId === selectedArea
       );
-      setSearchResults(updatedResults);
+      setSearchResults(filteredResults);
     } else {
       setSearchResults([]);
     }
@@ -169,10 +169,13 @@ export default function FindRecordPage() {
                       Person Name
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Monthly Fee
+                      Connection #
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Area
+                      Address
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Monthly Fee
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
@@ -189,12 +192,13 @@ export default function FindRecordPage() {
                         <div className="text-sm font-medium text-gray-900">{person.name}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">{person.amount !== undefined ? `$${Number(person.amount).toFixed(2)}` : '-'}</div>
+                        <div className="text-sm text-gray-900">{person.connectionNumber || '-'}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">
-                          {areas.find(a => a._id === selectedArea)?.name}
-                        </div>
+                        <div className="text-sm text-gray-500">{person.address || '-'}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-500">{person.amount !== undefined ? `$${Number(person.amount).toFixed(2)}` : '-'}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -240,7 +244,13 @@ export default function FindRecordPage() {
                       Person Name
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Number
+                      Connection #
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Address
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Monthly Fee
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
@@ -255,6 +265,12 @@ export default function FindRecordPage() {
                     <tr key={person._id} className="hover:bg-gray-50 transition-colors duration-150">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">{person.name}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{person.connectionNumber || '-'}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-500">{person.address || '-'}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-500">{person.amount !== undefined ? `$${Number(person.amount).toFixed(2)}` : '-'}</div>

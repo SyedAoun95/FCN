@@ -10,6 +10,7 @@ export default function PersonsPage() {
   const [persons, setPersons] = useState<any[]>([]);
   const [personName, setPersonName] = useState("");
   const [personConnectionNumber, setPersonConnectionNumber] = useState("");
+  const [personAddress, setPersonAddress] = useState("");
   const [monthlyFee, setMonthlyFee] = useState<number | ''>('');
   const [loading, setLoading] = useState(true);
 
@@ -54,18 +55,35 @@ export default function PersonsPage() {
       return;
     }
 
+    if (!personAddress.trim()) {
+      alert('Please enter person address');
+      return;
+    }
+
     if (monthlyFee === '' || Number.isNaN(Number(monthlyFee))) {
       alert('Please enter monthly fee');
       return;
     }
 
     try {
-      await db.createPerson(personName, areaId, personConnectionNumber.trim(), Number(monthlyFee));
+      // Pass the address parameter to createPerson function
+      await db.createPerson(
+        personName, 
+        areaId, 
+        personConnectionNumber.trim(), 
+        Number(monthlyFee), 
+        personAddress.trim()  // This is the address field
+      );
+      
+      // Refresh the persons list
       const allPersons = await db.getPersonsByArea(areaId);
       setPersons(allPersons);
+      
+      // Clear the form fields
       setPersonName("");
       setMonthlyFee('');
       setPersonConnectionNumber('');
+      setPersonAddress('');
     } catch (err: any) {
       alert(err?.message || 'Failed to add person');
     }
@@ -111,17 +129,17 @@ export default function PersonsPage() {
         </div>
       </div>
 
-      {/* Add Person Form Card - enter area connection number, person name, monthly fee */}
+      {/* Add Person Form Card */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
         <h2 className="text-xl font-semibold text-gray-800 mb-4">Add New Person</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Person Connection #</label>
             <input
               type="text"
               value={personConnectionNumber}
               onChange={(e) => setPersonConnectionNumber(e.target.value)}
-              placeholder="Enter connection number for person"
+              placeholder="Enter connection number"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 placeholder-gray-500"
             />
           </div>
@@ -133,6 +151,17 @@ export default function PersonsPage() {
               value={personName}
               onChange={(e) => setPersonName(e.target.value)}
               placeholder="Enter person name..."
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 placeholder-gray-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+            <input
+              type="text"
+              value={personAddress}
+              onChange={(e) => setPersonAddress(e.target.value)}
+              placeholder="Enter address..."
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 placeholder-gray-500"
             />
           </div>
@@ -181,6 +210,9 @@ export default function PersonsPage() {
                       Person Name
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Address
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Monthly Fee
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -199,6 +231,11 @@ export default function PersonsPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">{person.name}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-500">
+                          {person.address && person.address !== '-' ? person.address : '-'}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-500">{person.amount ? `$${Number(person.amount).toFixed(2)}` : '-'}</div>
@@ -225,7 +262,7 @@ export default function PersonsPage() {
         </div>
       )}
 
-      {/* Stats Cards - Similar to dashboard metrics */}
+      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
           <div className="flex justify-between items-start">

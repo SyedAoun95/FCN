@@ -16,7 +16,7 @@ export default function Home() {
   useEffect(() => {
     const role = localStorage.getItem("role");
     if (!role) {
-      router.push("/"); // user must login first
+      router.push("/"); // user must login 
       setAuthenticated(false);
     } else {
       setAuthenticated(true);

@@ -74,42 +74,51 @@ export const initDB = async () => {
   // ---------------------------
   // PERSON CRUD
   // ---------------------------
-  const createPerson = async (
-    name: string,
-    areaId: string,
-    connectionNumber?: string,
-    amount?: number
-  ) => {
-    if (!name.trim() || !areaId) throw new Error("Invalid input");
+ // ---------------------------
+// PERSON CRUD
+// ---------------------------
+const createPerson = async (
+  name: string,
+  areaId: string,
+  connectionNumber?: string,
+  amount?: number,
+  address?: string  // Added address parameter
+) => {
+  if (!name.trim() || !areaId) throw new Error("Invalid input");
 
-    const conn = connectionNumber !== undefined ? String(connectionNumber).trim() : "";
+  const conn = connectionNumber !== undefined ? String(connectionNumber).trim() : "";
 
-    if (!conn) {
-      throw new Error('Connection number is required for a person');
-    }
+  if (!conn) {
+    throw new Error('Connection number is required for a person');
+  }
 
-    // Ensure uniqueness of connectionNumber across persons
-    await localDB.createIndex({ index: { fields: ['type', 'connectionNumber'] } });
-    const existing = await localDB.find({ selector: { type: 'person', connectionNumber: conn } });
-    if (existing.docs && existing.docs.length > 0) {
-      throw new Error('Connection number already assigned to another person');
-    }
+  // Ensure uniqueness of connectionNumber across persons
+  await localDB.createIndex({ index: { fields: ['type', 'connectionNumber'] } });
+  const existing = await localDB.find({ selector: { type: 'person', connectionNumber: conn } });
+  if (existing.docs && existing.docs.length > 0) {
+    throw new Error('Connection number already assigned to another person');
+  }
 
-    const doc: any = {
-      _id: `person_${areaId}_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
-      type: "person",
-      name,
-      areaId,
-      connectionNumber: conn,
-      createdAt: new Date().toISOString(),
-    };
-
-    if (amount !== undefined && !Number.isNaN(Number(amount))) {
-      doc.amount = Number(amount);
-    }
-
-    return localDB.put(doc);
+  const doc: any = {
+    _id: `person_${areaId}_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+    type: "person",
+    name,
+    areaId,
+    connectionNumber: conn,
+    createdAt: new Date().toISOString(),
   };
+
+  if (amount !== undefined && !Number.isNaN(Number(amount))) {
+    doc.amount = Number(amount);
+  }
+
+  // Add address if provided
+  if (address !== undefined && address.trim() !== "") {
+    doc.address = address.trim();
+  }
+
+  return localDB.put(doc);
+};
 
   const getPersonsByArea = async (areaId: string) => {
     await localDB.createIndex({
