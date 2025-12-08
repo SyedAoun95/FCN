@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { initDB } from "../services/db";
 
 export default function PersonsPage() {
@@ -13,6 +13,7 @@ export default function PersonsPage() {
   const [personAddress, setPersonAddress] = useState("");
   const [monthlyFee, setMonthlyFee] = useState<number | ''>('');
   const [loading, setLoading] = useState(true);
+  const receiptRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const setupDB = async () => {
@@ -96,6 +97,242 @@ export default function PersonsPage() {
     setPersons(allPersons);
   };
 
+ const printReceipt = () => {
+  if (!personName.trim() || !personConnectionNumber.trim() || !personAddress.trim() || monthlyFee === '') {
+    alert('Please fill all person details before printing receipt');
+    return;
+  }
+
+  if (!selectedArea) {
+    alert('Please select an area');
+    return;
+  }
+
+  const selectedAreaName = areas.find(a => a._id === selectedArea)?.name || '';
+  
+  // Create receipt content
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) {
+    alert('Please allow pop-ups to print receipt');
+    return;
+  }
+  
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Person Registration Receipt</title>
+      <style>
+        body {
+          font-family: 'Arial', sans-serif;
+          margin: 0;
+          padding: 20px;
+          background-color: #fff;
+        }
+        .receipt-container {
+          max-width: 400px;
+          margin: 0 auto;
+          border: 2px solid #333;
+          border-radius: 10px;
+          padding: 25px;
+          background-color: #fff;
+        }
+        .urdu-header {
+          text-align: center;
+          margin-bottom: 15px;
+          direction: rtl;
+        }
+        .urdu-header h2 {
+          margin: 0;
+          color: #333;
+          font-size: 24px;
+          font-weight: bold;
+        }
+        .urdu-names {
+          text-align: center;
+          margin-bottom: 20px;
+          direction: rtl;
+        }
+        .urdu-names h3 {
+          margin: 0;
+          color: #222;
+          font-size: 20px;
+          font-weight: bold;
+        }
+        .urdu-names .ceo-title {
+          color: #666;
+          font-size: 16px;
+          margin: 5px 0;
+          font-weight: normal;
+        }
+        .urdu-names .owner-name {
+          color: #222;
+          font-size: 18px;
+          font-weight: bold;
+          margin-top: 10px;
+        }
+        .header {
+          text-align: center;
+          border-bottom: 3px solid #333;
+          padding-bottom: 15px;
+          margin-bottom: 20px;
+        }
+        .header h1 {
+          margin: 0;
+          color: #333;
+          font-size: 28px;
+          font-weight: bold;
+        }
+        .header p {
+          margin: 5px 0 0 0;
+          color: #666;
+          font-size: 14px;
+        }
+        .receipt-details {
+          margin-bottom: 25px;
+        }
+        .detail-row {
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: 10px;
+          padding-bottom: 8px;
+          border-bottom: 1px dashed #ddd;
+        }
+        .label {
+          font-weight: bold;
+          color: #555;
+          min-width: 150px;
+        }
+        .value {
+          color: #333;
+          text-align: right;
+        }
+        .total-row {
+          display: flex;
+          justify-content: space-between;
+          margin-top: 20px;
+          padding-top: 15px;
+          border-top: 2px solid #333;
+          font-size: 18px;
+          font-weight: bold;
+        }
+        .footer {
+          text-align: center;
+          margin-top: 30px;
+          padding-top: 15px;
+          border-top: 1px solid #ddd;
+          color: #666;
+          font-size: 12px;
+        }
+        .date {
+          text-align: right;
+          margin-bottom: 15px;
+          color: #666;
+          font-size: 12px;
+        }
+        .thank-you {
+          text-align: center;
+          margin-top: 20px;
+          font-style: italic;
+          color: #555;
+        }
+        @media print {
+          body {
+            margin: 0;
+            padding: 0;
+          }
+          .receipt-container {
+            border: none;
+            box-shadow: none;
+          }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="receipt-container">
+        <!-- Urdu Header -->
+        <div class="urdu-header">
+          <h2>فیملی کیبل نیٹ ورک</h2>
+        </div>
+        
+        <!-- Urdu Names Section -->
+        <div class="urdu-names">
+          <h3>خالد محمود خان</h3>
+          <div class="ceo-title">CEO's</div>
+          <div class="owner-name">سید محمد رضا شاہ</div>
+        </div>
+        
+      
+        
+        <div class="date">
+          Date: ${new Date().toLocaleDateString()}<br>
+          Time: ${new Date().toLocaleTimeString()}
+        </div>
+        
+        <div class="receipt-details">
+          <div class="detail-row">
+            <span class="label">Receipt No:</span>
+            <span class="value">${personConnectionNumber}-${Date.now().toString().slice(-6)}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Connection #:</span>
+            <span class="value">${personConnectionNumber}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Person Name:</span>
+            <span class="value">${personName}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Area:</span>
+            <span class="value">${selectedAreaName}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Address:</span>
+            <span class="value">${personAddress}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Registration Fee:</span>
+            <span class="value">0.00</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Monthly Fee:</span>
+            <span class="value">Rs.${Number(monthlyFee).toFixed(2)}</span>
+          </div>
+        </div>
+        
+        <div class="total-row">
+          <span>Monthly Charge:</span>
+          <span>Rs.${Number(monthlyFee).toFixed(2)}</span>
+        </div>
+        
+        <div class="thank-you">
+          Thank you for registering!
+        </div>
+        
+        <div class="footer">
+          <p>This is a computer generated receipt</p>
+          <p>No signature required</p>
+          <p>Please keep this receipt for future reference</p>
+        </div>
+      </div>
+      
+      <script>
+        window.onload = function() {
+          window.print();
+          setTimeout(function() {
+            window.close();
+          }, 1000);
+        };
+      </script>
+    </body>
+    </html>
+  `);
+  
+  printWindow.document.close();
+};
+
   if (loading) return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50">
       <div className="text-lg text-gray-600">Loading Database...</div>
@@ -104,6 +341,9 @@ export default function PersonsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
+      {/* Hidden receipt div for printing */}
+      <div ref={receiptRef} className="hidden"></div>
+
       {/* Header Section */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-800 mb-2">Persons Management</h1>
@@ -129,10 +369,12 @@ export default function PersonsPage() {
         </div>
       </div>
 
-      {/* Add Person Form Card */}
+      {/* Add Person Form Card - Updated layout with 2 fields per row */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">Add New Person</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+        <h2 className="text-xl font-semibold text-gray-800 mb-6">Add New Person</h2>
+        
+        {/* First row: Connection # and Person Name */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Person Connection #</label>
             <input
@@ -154,7 +396,10 @@ export default function PersonsPage() {
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 placeholder-gray-500"
             />
           </div>
+        </div>
 
+        {/* Second row: Address and Monthly Fee */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
             <input
@@ -177,12 +422,23 @@ export default function PersonsPage() {
             />
           </div>
         </div>
-        <button
-          onClick={addPerson}
-          className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-700 text-white rounded-lg hover:from-blue-700 hover:to-purple-800 transition-colors duration-200 font-medium"
-        >
-          Add Person
-        </button>
+
+        {/* Buttons row */}
+        <div className="flex gap-4">
+          <button
+            onClick={addPerson}
+            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-700 text-white rounded-lg hover:from-blue-700 hover:to-purple-800 transition-colors duration-200 font-medium"
+          >
+            Add Person
+          </button>
+          
+          <button
+            onClick={printReceipt}
+            className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-700 text-white rounded-lg hover:from-green-700 hover:to-emerald-800 transition-colors duration-200 font-medium"
+          >
+            Print Receipt
+          </button>
+        </div>
       </div>
 
       {/* Persons List Card - Only show when area is selected */}
