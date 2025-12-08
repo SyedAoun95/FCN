@@ -1,4 +1,3 @@
-
 "use client";
 // debit not page created still settings needed to be made in that page
 import React, { useEffect, useState } from "react";
@@ -11,6 +10,8 @@ export default function CashReceivedPage() {
 	const [personsInArea, setPersonsInArea] = useState<any[]>([]);
 	const [selectedPersonId, setSelectedPersonId] = useState("");
 	const [selectedPersonName, setSelectedPersonName] = useState("");
+	const [selectedPersonAddress, setSelectedPersonAddress] = useState("");
+	const [selectedPersonFee, setSelectedPersonFee] = useState<number | "">("");
 	const [selectedMonth, setSelectedMonth] = useState("");
 	const [amount, setAmount] = useState<number | "">("");
 	const [records, setRecords] = useState<any[]>([]);
@@ -40,6 +41,8 @@ export default function CashReceivedPage() {
 		setSelectedArea(areaId);
 		setSelectedPersonId("");
 		setSelectedPersonName("");
+		setSelectedPersonAddress("");
+		setSelectedPersonFee("");
 		setRecords([]);
 		setConnectionQuery("");
 		setConnectionSuggestions([]);
@@ -56,9 +59,18 @@ export default function CashReceivedPage() {
 	const onPersonSelect = (personId: string) => {
 		setSelectedPersonId(personId);
 		const person = personsInArea.find((x) => x._id === personId);
-		setSelectedPersonName(person?.name || "");
-		setConnectionSuggestions([]);
-		setConnectionQuery(person ? String(person.connectionNumber ?? person.number ?? person.name ?? "") : "");
+		if (person) {
+			setSelectedPersonName(person?.name || "");
+			setSelectedPersonAddress(person?.address || "");
+			setSelectedPersonFee(person?.amount || "");
+			setConnectionQuery(person ? String(person.connectionNumber ?? person.number ?? person.name ?? "") : "");
+			setConnectionSuggestions([]);
+			
+			// Auto-fill amount with monthly fee if available
+			if (person.amount && !amount) {
+				setAmount(person.amount);
+			}
+		}
 	};
 
 	const loadRecords = async (areaId: string) => {
@@ -97,6 +109,9 @@ export default function CashReceivedPage() {
 			areaId: selectedArea,
 			personId: selectedPersonId,
 			personName: selectedPersonName,
+			personAddress: selectedPersonAddress, // Save address in record
+			personMonthlyFee: selectedPersonFee, // Save monthly fee in record
+			connectionNumber: connectionQuery, // Save connection number
 			month: selectedMonth,
 			amount: Number(amount),
 			createdAt: new Date().toISOString(),
@@ -224,22 +239,65 @@ export default function CashReceivedPage() {
 
 					<div>
 						<label className="block text-sm font-medium text-gray-700 mb-2">Person Name</label>
-						<input type="text" value={selectedPersonName} readOnly className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-black" />
+						<input 
+							type="text" 
+							value={selectedPersonName} 
+							readOnly 
+							className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-black" 
+						/>
 					</div>
 
 					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">Month</label>
-						<input type="month" value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black" />
+						<label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+						<input 
+							type="text" 
+							value={selectedPersonAddress} 
+							readOnly 
+							className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-black" 
+						/>
 					</div>
 
 					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">Amount</label>
-						<input type="number" value={amount === "" ? "" : amount} onChange={(e) => setAmount(e.target.value === "" ? "" : Number(e.target.value))} placeholder="0.00" className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black" />
+						<label className="block text-sm font-medium text-gray-700 mb-2">Monthly Fee</label>
+						<input 
+							type="text" 
+							value={selectedPersonFee === "" ? "" : `$${Number(selectedPersonFee).toFixed(2)}`} 
+							readOnly 
+							className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-black" 
+						/>
 					</div>
 				</div>
 
-				<div className="mt-4">
-					<button onClick={addRecord} className="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-700 text-white rounded-lg hover:from-blue-700 hover:to-purple-800">Add Record</button>
+				<div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 items-end">
+					<div>
+						<label className="block text-sm font-medium text-gray-700 mb-2">Month</label>
+						<input 
+							type="month" 
+							value={selectedMonth} 
+							onChange={(e) => setSelectedMonth(e.target.value)} 
+							className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black" 
+						/>
+					</div>
+
+					<div>
+						<label className="block text-sm font-medium text-gray-700 mb-2">Amount Received</label>
+						<input 
+							type="number" 
+							value={amount === "" ? "" : amount} 
+							onChange={(e) => setAmount(e.target.value === "" ? "" : Number(e.target.value))} 
+							placeholder="0.00" 
+							className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black" 
+						/>
+					</div>
+
+					<div className="flex items-end">
+						<button 
+							onClick={addRecord} 
+							className="px-6 py-3 w-full bg-gradient-to-r from-blue-600 to-purple-700 text-white rounded-lg hover:from-blue-700 hover:to-purple-800 transition-colors duration-200"
+						>
+							Add Record
+						</button>
+					</div>
 				</div>
 			</div>
 
@@ -253,19 +311,32 @@ export default function CashReceivedPage() {
 							<thead className="bg-gray-50">
 								<tr>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Person</th>
+									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Connection #</th>
+									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Address</th>
+									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Monthly Fee</th>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Month</th>
-									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount Received</th>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
 								</tr>
 							</thead>
 							<tbody className="bg-white divide-y divide-gray-200">
 								{records.map((r: any) => (
-									<tr key={r._id}>
+									<tr key={r._id} className="hover:bg-gray-50">
 										<td className="px-6 py-3 text-sm text-gray-900">{r.personName}</td>
+										<td className="px-6 py-3 text-sm text-gray-900">{r.connectionNumber || '-'}</td>
+										<td className="px-6 py-3 text-sm text-gray-500">{r.personAddress || '-'}</td>
+										<td className="px-6 py-3 text-sm text-gray-500">
+											{r.personMonthlyFee ? `$${Number(r.personMonthlyFee).toFixed(2)}` : '-'}
+										</td>
 										<td className="px-6 py-3 text-sm text-gray-500">{r.month}</td>
-										<td className="px-6 py-3 text-sm text-gray-500">${Number(r.amount).toFixed(2)}</td>
+										<td className="px-6 py-3 text-sm text-gray-900 font-medium">${Number(r.amount).toFixed(2)}</td>
 										<td className="px-6 py-3 text-sm">
-											<button onClick={() => deleteRecord(r)} className="text-red-600">Delete</button>
+											<button 
+												onClick={() => deleteRecord(r)} 
+												className="text-red-600 hover:text-red-800 hover:bg-red-50 px-3 py-1 rounded transition-colors duration-200"
+											>
+												Delete
+											</button>
 										</td>
 									</tr>
 								))}
