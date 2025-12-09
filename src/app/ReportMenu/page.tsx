@@ -260,6 +260,102 @@ export default function ReportMenuPage() {
   const totalPaidAllTime = records.reduce((s: number, r: any) => s + (Number(r.amount) || 0), 0);
   const allTimeBalance = totalExpectedAllTime - totalPaidAllTime;
 
+  const printRecords = () => {
+    const printWindow = window.open('', '', 'width=1200,height=600');
+    if (!printWindow) return;
+
+    const tableHTML = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Report Menu - Records</title>
+        <style>
+          * { margin: 0; padding: 0; }
+          body { font-family: Arial, sans-serif; padding: 20px; }
+          h1 { text-align: center; margin-bottom: 10px; font-size: 24px; }
+          h2 { margin-top: 20px; margin-bottom: 10px; font-size: 16px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+          thead { background-color: #f3f4f6; }
+          th { padding: 12px; text-align: left; font-weight: bold; border-bottom: 2px solid #d1d5db; font-size: 12px; }
+          td { padding: 10px 12px; border-bottom: 1px solid #e5e7eb; }
+          tr:hover { background-color: #f9fafb; }
+        </style>
+      </head>
+      <body>
+        <h1>Monthly Balance Report</h1>
+        <p><strong>Person:</strong> ${selectedPersonName || 'N/A'}</p>
+        <p><strong>Connection #:</strong> ${connectionQuery || 'N/A'}</p>
+        
+        <h2>Monthly Balances</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Month</th>
+              <th>Expected</th>
+              <th>Paid</th>
+              <th>Recorded At</th>
+              <th>Pending amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${monthlyBalances
+              .filter((m: any) => (selectedMonth ? m.month === selectedMonth : true))
+              .map((m: any) => `
+                <tr>
+                  <td>${m.month}</td>
+                  <td>$${Number(m.expected).toFixed(2)}</td>
+                  <td>$${Number(m.paid).toFixed(2)}</td>
+                  <td>${m.lastPaidAt ? new Date(m.lastPaidAt).toLocaleString() : '-'}</td>
+                  <td>$${Number(m.cumulativePending).toFixed(2)}</td>
+                </tr>
+              `).join('')}
+          </tbody>
+        </table>
+
+        ${selectedMonth ? `
+          <h2>Transactions for ${selectedMonth}</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Amount</th>
+                <th>Month</th>
+                <th>Person Name</th>
+                <th>Connection #</th>
+                <th>Address</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${records
+                .filter((r: any) => {
+                  const m = r.month || (r.createdAt ? `${new Date(r.createdAt).getFullYear()}-${String(new Date(r.createdAt).getMonth() + 1).padStart(2, '0')}` : null);
+                  return m === selectedMonth;
+                })
+                .map((r: any) => `
+                  <tr>
+                    <td>${r.createdAt ? new Date(r.createdAt).toLocaleString() : '-'}</td>
+                    <td>$${Number(r.amount).toFixed(2)}</td>
+                    <td>${r.month || '-'}</td>
+                    <td>${r.personName || '-'}</td>
+                    <td>${r.connectionNumber || '-'}</td>
+                    <td>${r.personAddress || '-'}</td>
+                  </tr>
+                `).join('')}
+            </tbody>
+          </table>
+        ` : ''}
+
+        <script>
+          window.print();
+        </script>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(tableHTML);
+    printWindow.document.close();
+  };
+
   if (loading)
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
@@ -390,7 +486,16 @@ export default function ReportMenuPage() {
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold mb-4">All Records</h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-semibold">All Records</h2>
+          <button
+            onClick={printRecords}
+            disabled={monthlyBalances.length === 0}
+            className="px-4 py-2 bg-gradient-to-r from-green-600 to-teal-700 text-white text-sm rounded-lg hover:from-green-700 hover:to-teal-800 disabled:from-gray-400 disabled:to-gray-500 transition-colors duration-200"
+          >
+            Print
+          </button>
+        </div>
         {monthlyBalances.length === 0 ? (
           <div className="text-sm text-gray-500">No monthly data for selected person</div>
         ) : (
