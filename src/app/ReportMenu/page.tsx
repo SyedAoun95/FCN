@@ -16,7 +16,10 @@ export default function ReportMenuPage() {
   const [selectedPersonId, setSelectedPersonId] = useState("");
   const [selectedPersonName, setSelectedPersonName] = useState("");
   const [selectedPersonFee, setSelectedPersonFee] = useState<number | null>(null);
+  const [selectedPersonCreatedAt, setSelectedPersonCreatedAt] = useState<string | null>(null);
   const [monthlyBalances, setMonthlyBalances] = useState<any[]>([]);
+  const [selectedMonth, setSelectedMonth] = useState<string>("");
+  const [monthTransactions, setMonthTransactions] = useState<any[]>([]);
 
   const [records, setRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,6 +47,7 @@ export default function ReportMenuPage() {
     setRecords([]);
     setConnectionQuery("");
     setConnectionSuggestions([]);
+    setSelectedMonth("");
     if (!db || !areaId) return;
     try {
       const p = await db.getPersonsByArea(areaId);
@@ -66,10 +70,86 @@ export default function ReportMenuPage() {
     }
     setSelectedPersonName(person?.name || "");
     setSelectedPersonFee(person?.amount ?? null);
+    setSelectedPersonCreatedAt(person?.createdAt ?? null);
     setConnectionSuggestions([]);
     setConnectionQuery(person ? String(person.connectionNumber ?? person.number ?? person.name ?? "") : "");
+    setSelectedMonth("");
     await loadRecordsForPerson(personId, person?.amount ?? null);
+    // also clear month transactions
+    setMonthTransactions([]);
   };
+
+  // load combined transactions (payments + person create/update) for selected month
+  const loadMonthTransactions = async (month: string) => {
+    if (!db || !month) {
+      setMonthTransactions([]);
+      return;
+    }
+
+    // helper to get YYYY-MM from date string
+    const toMonth = (dStr?: string) => {
+      if (!dStr) return null;
+      try {
+        const d = new Date(dStr);
+        if (Number.isNaN(d.getTime())) return null;
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      } catch (e) {
+        return null;
+      }
+    };
+
+    try {
+      // fetch debit records (payments)
+      await db.localDB.createIndex({ index: { fields: ['type', 'areaId', 'personId', 'createdAt', 'month'] } });
+      const debRes = await db.localDB.find({ selector: { type: 'debit' } });
+      const debits = (debRes.docs || []).filter((d: any) => {
+        // area filter if selected
+        if (selectedArea && d.areaId && d.areaId !== selectedArea) return false;
+        // if selectedPersonId exists, show transactions for that person only
+        if (selectedPersonId && d.personId && d.personId !== selectedPersonId) return false;
+        const m = d.month || toMonth(d.createdAt);
+        return m === month;
+      }).map((d: any) => ({ type: 'payment', doc: d, date: d.createdAt || null }));
+
+      // fetch person docs (creates/updates)
+      await db.localDB.createIndex({ index: { fields: ['type', 'areaId', 'createdAt', 'updatedAt'] } });
+      const perRes = await db.localDB.find({ selector: { type: 'person' } });
+      const persons = (perRes.docs || []).flatMap((p: any) => {
+        // area filter if selected
+        if (selectedArea && p.areaId && p.areaId !== selectedArea) return [];
+        // if selectedPersonId defined, and it's not this person, skip
+        if (selectedPersonId && p._id !== selectedPersonId) return [];
+
+        const rows: any[] = [];
+        const mCreated = toMonth(p.createdAt);
+        if (mCreated === month) rows.push({ type: 'person-created', doc: p, date: p.createdAt });
+        const mUpdated = toMonth(p.updatedAt);
+        if (mUpdated === month) rows.push({ type: 'person-updated', doc: p, date: p.updatedAt });
+        return rows;
+      });
+
+      // combine and sort by date desc
+      const combined = [...debits, ...persons].sort((a: any, b: any) => {
+        const da = a.date ? new Date(a.date).getTime() : 0;
+        const dbt = b.date ? new Date(b.date).getTime() : 0;
+        return dbt - da;
+      });
+
+      setMonthTransactions(combined);
+    } catch (err) {
+      console.warn('failed to load month transactions', err);
+      setMonthTransactions([]);
+    }
+  };
+
+  // watch selectedMonth and db
+  React.useEffect(() => {
+    if (!selectedMonth) {
+      setMonthTransactions([]);
+      return;
+    }
+    loadMonthTransactions(selectedMonth);
+  }, [selectedMonth, db, selectedArea, selectedPersonId]);
 
   const loadRecordsForPerson = async (personId: string, expectedFeeOverride: number | null = null) => {
     if (!db || !personId) return;
@@ -131,6 +211,54 @@ export default function ReportMenuPage() {
       console.warn("failed to load records for person", e);
     }
   };
+
+  // compute paid in selected month and all-time balance using records and person's start date
+  const toMonth = (dStr?: string | null) => {
+    if (!dStr) return null;
+    try {
+      const d = new Date(dStr);
+      if (Number.isNaN(d.getTime())) return null;
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    } catch (e) {
+      return null;
+    }
+  };
+
+  const paidInSelectedMonth = selectedMonth
+    ? records
+        .filter((r: any) => {
+          const m = r.month || toMonth(r.createdAt);
+          return m === selectedMonth;
+        })
+        .reduce((s: number, r: any) => s + (Number(r.amount) || 0), 0)
+    : 0;
+
+  const expectedPerMonth = Number(selectedPersonFee) || 0;
+  const selectedPendingAmount = selectedMonth ? Math.max(0, expectedPerMonth - paidInSelectedMonth) : 0;
+
+  // all-time: determine person start (createdAt) or earliest payment, compute months between then and now
+  const earliestRecordDate = records.reduce((min: string | null, r: any) => {
+    if (!r.createdAt) return min;
+    const d = new Date(r.createdAt);
+    if (!min) return d.toISOString();
+    return new Date(min) > d ? d.toISOString() : min;
+  }, null as string | null);
+
+  const startDate = selectedPersonCreatedAt ? new Date(selectedPersonCreatedAt) : earliestRecordDate ? new Date(earliestRecordDate) : null;
+
+  const monthsBetween = (start?: Date | null, end: Date = new Date()) => {
+    if (!start) return 1;
+    const sy = start.getFullYear();
+    const sm = start.getMonth();
+    const ey = end.getFullYear();
+    const em = end.getMonth();
+    return (ey - sy) * 12 + (em - sm) + 1;
+  };
+
+  const monthsCount = monthsBetween(startDate, new Date());
+  const totalExpectedAllTime = expectedPerMonth * monthsCount;
+  const totalPaidAllTime = records.reduce((s: number, r: any) => s + (Number(r.amount) || 0), 0);
+  const allTimeBalance = totalExpectedAllTime - totalPaidAllTime;
 
   if (loading)
     return (
@@ -247,6 +375,18 @@ export default function ReportMenuPage() {
             <input readOnly value={selectedPersonName} className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-black" />
           </div>
         </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-1 gap-4 mt-4 items-end">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Month (optional)</label>
+            <input
+              type="month"
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
+            />
+          </div>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -266,20 +406,77 @@ export default function ReportMenuPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {monthlyBalances.map((m: any) => (
-                  <tr key={m.month} className={m.pending > 0 ? 'bg-orange-50' : m.pending === 0 ? 'bg-green-50' : 'bg-blue-50'}>
-                    <td className="px-6 py-3 text-sm text-gray-900">{m.month}</td>
-                    <td className="px-6 py-3 text-sm text-gray-500">${Number(m.expected).toFixed(2)}</td>
-                    <td className="px-6 py-3 text-sm text-gray-900">${Number(m.paid).toFixed(2)}</td>
-                    <td className="px-6 py-3 text-sm text-gray-500">{m.lastPaidAt ? new Date(m.lastPaidAt).toLocaleString() : '-'}</td>
-                    <td className="px-6 py-3 text-sm text-red-600 font-semibold">${Number(m.cumulativePending).toFixed(2)}</td>
-                  </tr>
-                ))}
+                {monthlyBalances
+                  .filter((m: any) => (selectedMonth ? m.month === selectedMonth : true))
+                  .map((m: any) => (
+                    <tr key={m.month} className={m.pending > 0 ? 'bg-orange-50' : m.pending === 0 ? 'bg-green-50' : 'bg-blue-50'}>
+                      <td className="px-6 py-3 text-sm text-gray-900">{m.month}</td>
+                      <td className="px-6 py-3 text-sm text-gray-500">${Number(m.expected).toFixed(2)}</td>
+                      <td className="px-6 py-3 text-sm text-gray-900">${Number(m.paid).toFixed(2)}</td>
+                      <td className="px-6 py-3 text-sm text-gray-500">{m.lastPaidAt ? new Date(m.lastPaidAt).toLocaleString() : '-'}</td>
+                      <td className="px-6 py-3 text-sm text-red-600 font-semibold">${Number(m.cumulativePending).toFixed(2)}</td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>
-        )}
+          )}
+
+          {monthlyBalances.length > 0 && (
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              {selectedMonth && (
+                <div className="p-4 bg-orange-50 rounded-lg border border-orange-100">
+                  <div className="text-xs text-gray-600">Pending for {selectedMonth}</div>
+                  <div className="text-lg font-semibold text-red-600">${Number(selectedPendingAmount).toFixed(2)}</div>
+                  <div className="text-sm text-gray-600 mt-1">
+                    Expected per month: ${Number(expectedPerMonth).toFixed(2)} — Paid: ${Number(paidInSelectedMonth).toFixed(2)}
+                  </div>
+                </div>
+              )}
+
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
+                <div className="text-xs text-gray-600">All-time balance</div>
+                <div className="text-lg font-semibold text-black">${Number(allTimeBalance).toFixed(2)}</div>
+              </div>
+            </div>
+          )}
       </div>
+      {selectedMonth && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mt-6">
+          <h2 className="text-lg font-semibold mb-4">Transactions for {selectedMonth}</h2>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Month</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Person Name</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Connection #</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Address</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {records
+                  .filter((r: any) => {
+                    const m = r.month || (r.createdAt ? `${new Date(r.createdAt).getFullYear()}-${String(new Date(r.createdAt).getMonth() + 1).padStart(2, '0')}` : null);
+                    return m === selectedMonth;
+                  })
+                  .map((r: any) => (
+                    <tr key={r._id} className="hover:bg-gray-50">
+                      <td className="px-6 py-3 text-sm text-gray-900">{r.createdAt ? new Date(r.createdAt).toLocaleString() : '-'}</td>
+                      <td className="px-6 py-3 text-sm text-gray-900 font-semibold">${Number(r.amount).toFixed(2)}</td>
+                      <td className="px-6 py-3 text-sm text-gray-500">{r.month || '-'}</td>
+                      <td className="px-6 py-3 text-sm text-gray-900">{r.personName || '-'}</td>
+                      <td className="px-6 py-3 text-sm text-gray-500">{r.connectionNumber || '-'}</td>
+                      <td className="px-6 py-3 text-sm text-gray-500">{r.personAddress || '-'}</td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

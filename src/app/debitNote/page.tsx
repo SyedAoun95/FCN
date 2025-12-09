@@ -138,6 +138,63 @@ export default function CashReceivedPage() {
 		}
 	};
 
+	const printRecords = () => {
+		const printWindow = window.open('', '', 'width=1200,height=600');
+		if (!printWindow) return;
+
+		const tableHTML = `
+			<!DOCTYPE html>
+			<html>
+			<head>
+				<title>Family Cable Network - Records</title>
+				<style>
+					* { margin: 0; padding: 0; }
+					body { font-family: Arial, sans-serif; padding: 20px; }
+					h1 { text-align: center; margin-bottom: 20px; font-size: 24px; }
+					table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+					thead { background-color: #f3f4f6; }
+					th { padding: 12px; text-align: left; font-weight: bold; border-bottom: 2px solid #d1d5db; font-size: 12px; }
+					td { padding: 10px 12px; border-bottom: 1px solid #e5e7eb; }
+					tr:hover { background-color: #f9fafb; }
+				</style>
+			</head>
+			<body>
+				<h1>Family Cable Network</h1>
+				<table>
+					<thead>
+						<tr>
+							<th>Person</th>
+							<th>Connection #</th>
+							<th>Address</th>
+							<th>Monthly Fee</th>
+							<th>Month</th>
+							<th>Amount Received</th>
+						</tr>
+					</thead>
+					<tbody>
+						${records.map((r) => `
+							<tr>
+								<td>${r.personName}</td>
+								<td>${r.connectionNumber || '-'}</td>
+								<td>${r.personAddress || '-'}</td>
+								<td>$${Number(r.personMonthlyFee).toFixed(2)}</td>
+								<td>${r.month}</td>
+								<td>$${Number(r.amount).toFixed(2)}</td>
+							</tr>
+						`).join('')}
+					</tbody>
+				</table>
+				<script>
+					window.print();
+				</script>
+			</body>
+			</html>
+		`;
+
+		printWindow.document.write(tableHTML);
+		printWindow.document.close();
+	};
+
 	if (loading)
 		return (
 			<div className="flex items-center justify-center min-h-screen bg-gray-50">
@@ -270,36 +327,47 @@ export default function CashReceivedPage() {
 					</div>
 				</div>
 
-				<div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 items-end">
-					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">Month</label>
-						<input 
-							type="month" 
-							value={selectedMonth} 
-							onChange={(e) => setSelectedMonth(e.target.value)} 
-							className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black" 
-						/>
-					</div>
+				<div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-1 items-end">
+				<div>
+  <label className="block text-sm font-medium text-gray-700 mb-2">Month</label>
+
+  <input 
+    type="month" 
+    value={selectedMonth} 
+    onChange={(e) => setSelectedMonth(e.target.value)} 
+    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black" 
+  />
+</div>
+
 
 					<div>
 						<label className="block text-sm font-medium text-gray-700 mb-2">Amount Received</label>
-						<input 
-							type="number" 
-							value={amount === "" ? "" : amount} 
-							onChange={(e) => setAmount(e.target.value === "" ? "" : Number(e.target.value))} 
-							placeholder="0.00" 
-							className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black" 
-						/>
-					</div>
 
-					<div className="flex items-end">
-						<button 
-							onClick={addRecord} 
-							className="px-6 py-3 w-full bg-gradient-to-r from-blue-600 to-purple-700 text-white rounded-lg hover:from-blue-700 hover:to-purple-800 transition-colors duration-200"
-						>
-							Add Record
-						</button>
-					</div>
+<input 
+  type="number" 
+  value={amount === "" ? "" : amount} 
+  onChange={(e) => setAmount(e.target.value === "" ? "" : Number(e.target.value))} 
+  placeholder="0.00" 
+  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black" 
+/>
+
+				</div>
+
+				<div className="flex items-end gap-2">
+					<button 
+  onClick={addRecord} 
+  className="px-4 py-3 flex-1 bg-gradient-to-r from-blue-600 to-purple-700 text-white text-sm rounded-lg hover:from-blue-700 hover:to-purple-800 transition-colors duration-200"
+>
+  Add Record
+</button>
+					<button 
+  onClick={printRecords} 
+  className="px-4 py-3 flex-1 bg-gradient-to-r from-green-600 to-teal-700 text-white text-sm rounded-lg hover:from-green-700 hover:to-teal-800 transition-colors duration-200"
+>
+  Print
+</button>
+
+				</div>
 				</div>
 			</div>
 
