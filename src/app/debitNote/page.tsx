@@ -12,6 +12,7 @@ export default function CashReceivedPage() {
 	const [selectedPersonName, setSelectedPersonName] = useState("");
 	const [selectedPersonAddress, setSelectedPersonAddress] = useState("");
 	const [selectedPersonFee, setSelectedPersonFee] = useState<number | "">("");
+	const [selectedPersonCreatedAt, setSelectedPersonCreatedAt] = useState<string | null>(null);
 	const [selectedMonth, setSelectedMonth] = useState("");
 	const [amount, setAmount] = useState<number | "">("");
 	const [records, setRecords] = useState<any[]>([]);
@@ -63,6 +64,7 @@ export default function CashReceivedPage() {
 			setSelectedPersonName(person?.name || "");
 			setSelectedPersonAddress(person?.address || "");
 			setSelectedPersonFee(person?.amount || "");
+			setSelectedPersonCreatedAt(person?.createdAt ?? null);
 			setConnectionQuery(person ? String(person.connectionNumber ?? person.number ?? person.name ?? "") : "");
 			setConnectionSuggestions([]);
 			
@@ -138,6 +140,58 @@ export default function CashReceivedPage() {
 		}
 	};
 
+	// compute pending and all-time balance for selected person
+	const toMonth = (dStr?: string | null) => {
+		if (!dStr) return null;
+		try {
+			const d = new Date(dStr);
+			if (Number.isNaN(d.getTime())) return null;
+			return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+		} catch (e) {
+			return null;
+		}
+	};
+
+	const selectedPersonRecords = selectedPersonId
+		? records.filter((r: any) => r.personId === selectedPersonId)
+		: [];
+
+	const paidInSelectedMonth = selectedMonth
+		? selectedPersonRecords
+			.filter((r: any) => {
+				const m = r.month || toMonth(r.createdAt);
+				return m === selectedMonth;
+			})
+			.reduce((s: number, r: any) => s + (Number(r.amount) || 0), 0)
+		: 0;
+
+	const expectedPerMonth = Number(selectedPersonFee) || 0;
+	const selectedPendingAmount = selectedMonth ? Math.max(0, expectedPerMonth - paidInSelectedMonth) : 0;
+
+	// all-time: determine person start (createdAt) or earliest payment
+	const earliestRecordDate = selectedPersonRecords.reduce((min: string | null, r: any) => {
+		if (!r.createdAt) return min;
+		const d = new Date(r.createdAt);
+		if (!min) return d.toISOString();
+		return new Date(min) > d ? d.toISOString() : min;
+	}, null as string | null);
+
+	const startDate = selectedPersonCreatedAt ? new Date(selectedPersonCreatedAt) : earliestRecordDate ? new Date(earliestRecordDate) : null;
+
+	const monthsBetween = (start?: Date | null, end: Date = new Date()) => {
+		if (!start) return 1;
+		const sy = start.getFullYear();
+		const sm = start.getMonth();
+		const ey = end.getFullYear();
+		const em = end.getMonth();
+		return (ey - sy) * 12 + (em - sm) + 1;
+	};
+
+	const monthsCount = monthsBetween(startDate, new Date());
+	const totalExpectedAllTime = expectedPerMonth * monthsCount;
+	const totalPaidAllTime = selectedPersonRecords.reduce((s: number, r: any) => s + (Number(r.amount) || 0), 0);
+	const allTimeBalance = totalExpectedAllTime - totalPaidAllTime;
+
 	const printRecords = () => {
 		const printWindow = window.open('', '', 'width=1200,height=600');
 		if (!printWindow) return;
@@ -169,6 +223,7 @@ export default function CashReceivedPage() {
 							<th>Monthly Fee</th>
 							<th>Month</th>
 							<th>Amount Received</th>
+							
 						</tr>
 					</thead>
 					<tbody>
@@ -369,9 +424,28 @@ export default function CashReceivedPage() {
 
 				</div>
 				</div>
+
+				{selectedPersonId && (
+					<div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+						{selectedMonth && (
+							<div className="p-4 bg-orange-50 rounded-lg border border-orange-100">
+								<div className="text-xs text-gray-600">Pending for {selectedMonth}</div>
+								<div className="text-lg font-semibold text-red-600">${Number(selectedPendingAmount).toFixed(2)}</div>
+								<div className="text-sm text-gray-600 mt-1">
+									Expected per month: ${Number(expectedPerMonth).toFixed(2)} — Paid: ${Number(paidInSelectedMonth).toFixed(2)}
+								</div>
+							</div>
+						)}
+
+						<div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
+							<div className="text-xs text-gray-600">All-time balance</div>
+							<div className="text-lg font-semibold text-black">${Number(allTimeBalance).toFixed(2)}</div>
+						</div>
+					</div>
+				)}
 			</div>
 
-			<div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+			<div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mt-6">
 				<h2 className="text-lg font-semibold mb-4">Records</h2>
 				{records.length === 0 ? (
 					<div className="text-sm text-gray-500">No records for selected area</div>
@@ -386,6 +460,7 @@ export default function CashReceivedPage() {
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Monthly Fee</th>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Month</th>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount Received</th>
+									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pending payment</th>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
 								</tr>
 							</thead>
@@ -400,14 +475,27 @@ export default function CashReceivedPage() {
 										</td>
 										<td className="px-6 py-3 text-sm text-gray-500">{r.month}</td>
 										<td className="px-6 py-3 text-sm text-gray-900 font-medium">${Number(r.amount).toFixed(2)}</td>
-										<td className="px-6 py-3 text-sm">
-											<button 
-												onClick={() => deleteRecord(r)} 
-												className="text-red-600 hover:text-red-800 hover:bg-red-50 px-3 py-1 rounded transition-colors duration-200"
-											>
-												Delete
-											</button>
-										</td>
+										{(() => {
+											const rowMonth = r.month || (r.createdAt ? `${new Date(r.createdAt).getFullYear()}-${String(new Date(r.createdAt).getMonth() + 1).padStart(2, '0')}` : null);
+											const paidForRow = records
+												.filter((rec: any) => rec.personId === r.personId && (rec.month || (rec.createdAt ? `${new Date(rec.createdAt).getFullYear()}-${String(new Date(rec.createdAt).getMonth() + 1).padStart(2, '0')}` : null)) === rowMonth)
+												.reduce((s: number, rec: any) => s + (Number(rec.amount) || 0), 0);
+											const expected = Number(r.personMonthlyFee ?? selectedPersonFee) || 0;
+											const pending = Math.max(0, expected - paidForRow);
+											return (
+												<>
+													<td className="px-6 py-3 text-sm text-red-600 font-semibold">Rs. {Number(pending).toFixed(2)}</td>
+													<td className="px-6 py-3 text-sm">
+														<button 
+															onClick={() => deleteRecord(r)} 
+															className="text-red-600 hover:text-red-800 hover:bg-red-50 px-3 py-1 rounded transition-colors duration-200"
+														>
+															Delete
+														</button>
+													</td>
+												</>
+											);
+										})()}
 									</tr>
 								))}
 							</tbody>
