@@ -40,7 +40,7 @@ export default function FindInternetRecordPage() {
     
     setIsSearching(true);
     
-    // Use the actual searchInternetEntries function from the db service
+
     const results = await db.searchInternetEntries(searchQuery);
     
     // Filter results to only include entries from the selected area
