@@ -13,6 +13,7 @@ import {
   faReceipt,
   faFileLines,
   faRightToBracket,
+  faGlobe,          // Internet Entry Icon
 } from "@fortawesome/free-solid-svg-icons";
 import Link from 'next/link';
 // icons for sidebar menu
@@ -20,6 +21,7 @@ const menuItems = [
   { name: "Dashboard", icon: faGauge, href: "/dashboard" }, // <-- NEW ITEM
   { name: "Add Area", icon: faLocationDot, href: "/areas" },
   { name: "Add Person", icon: faUserPlus, href: "/persons" },
+  { name: "Internet Entry", icon: faGlobe, href: "/Internet-entery-page" },
   { name: "Remove Person", icon: faUserMinus, href: "/remove-person" },
   { name: "Update Record", icon: faPenToSquare, href: "/update-record" },
   { name: "Find Record", icon: faSearch, href: "/searchperson" },

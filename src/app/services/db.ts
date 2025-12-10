@@ -74,51 +74,47 @@ export const initDB = async () => {
   // ---------------------------
   // PERSON CRUD
   // ---------------------------
- // ---------------------------
-// PERSON CRUD
-// ---------------------------
-const createPerson = async (
-  name: string,
-  areaId: string,
-  connectionNumber?: string,
-  amount?: number,
-  address?: string  // Added address parameter
-) => {
-  if (!name.trim() || !areaId) throw new Error("Invalid input");
+  const createPerson = async (
+    name: string,
+    areaId: string,
+    connectionNumber?: string,
+    amount?: number,
+    address?: string
+  ) => {
+    if (!name.trim() || !areaId) throw new Error("Invalid input");
 
-  const conn = connectionNumber !== undefined ? String(connectionNumber).trim() : "";
+    const conn = connectionNumber !== undefined ? String(connectionNumber).trim() : "";
 
-  if (!conn) {
-    throw new Error('Connection number is required for a person');
-  }
+    if (!conn) {
+      throw new Error('Connection number is required for a person');
+    }
 
-  // Ensure uniqueness of connectionNumber across persons
-  await localDB.createIndex({ index: { fields: ['type', 'connectionNumber'] } });
-  const existing = await localDB.find({ selector: { type: 'person', connectionNumber: conn } });
-  if (existing.docs && existing.docs.length > 0) {
-    throw new Error('Connection number already assigned to another person');
-  }
+    // Ensure uniqueness of connectionNumber across persons
+    await localDB.createIndex({ index: { fields: ['type', 'connectionNumber'] } });
+    const existing = await localDB.find({ selector: { type: 'person', connectionNumber: conn } });
+    if (existing.docs && existing.docs.length > 0) {
+      throw new Error('Connection number already assigned to another person');
+    }
 
-  const doc: any = {
-    _id: `person_${areaId}_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
-    type: "person",
-    name,
-    areaId,
-    connectionNumber: conn,
-    createdAt: new Date().toISOString(),
+    const doc: any = {
+      _id: `person_${areaId}_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+      type: "person",
+      name,
+      areaId,
+      connectionNumber: conn,
+      createdAt: new Date().toISOString(),
+    };
+
+    if (amount !== undefined && !Number.isNaN(Number(amount))) {
+      doc.amount = Number(amount);
+    }
+
+    if (address !== undefined && address.trim() !== "") {
+      doc.address = address.trim();
+    }
+
+    return localDB.put(doc);
   };
-
-  if (amount !== undefined && !Number.isNaN(Number(amount))) {
-    doc.amount = Number(amount);
-  }
-
-  // Add address if provided
-  if (address !== undefined && address.trim() !== "") {
-    doc.address = address.trim();
-  }
-
-  return localDB.put(doc);
-};
 
   const getPersonsByArea = async (areaId: string) => {
     await localDB.createIndex({
@@ -172,7 +168,6 @@ const createPerson = async (
   // AGGREGATION HELPERS
   // ---------------------------
   const totalConnections = async () => {
-    // Count only valid person docs (those with `name` and `areaId` present)
     await localDB.createIndex({ index: { fields: ['type', 'name', 'areaId'] } });
     const res = await localDB.find({
       selector: {
@@ -184,7 +179,6 @@ const createPerson = async (
     return res.docs.length;
   };
 
-  // Debug helper: return all person docs (useful to inspect bogus/sample docs)
   const getAllPersons = async () => {
     await localDB.createIndex({ index: { fields: ['type', 'name', 'areaId', 'amount', 'createdAt'] } });
     const res = await localDB.find({ selector: { type: 'person' } });
@@ -236,9 +230,68 @@ const createPerson = async (
     return Object.keys(map).map((k) => ({ month: k, total: map[k] }));
   };
 
-  // 
-  // AUTOMATIC SYNC ON INIT
   // ---------------------------
+  // INTERNET ENTRY CRUD
+  // ---------------------------
+  const createInternetEntry = async (
+    name: string,
+    fatherName: string,
+    cnic: string,
+    phone: string,
+    address: string,
+    areaId: string,
+    connectionNumber?: string,
+    routerNo?: string,
+    monthlyFee?: number,
+    installationFee?: number
+  ) => {
+    if (!name.trim() || !areaId) throw new Error("Invalid input");
+
+    const conn = connectionNumber !== undefined ? String(connectionNumber).trim() : "";
+    const router = routerNo !== undefined ? String(routerNo).trim() : "";
+
+    const doc: any = {
+      _id: `internet_${areaId}_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+      type: "internet-entry",
+      name,
+      fatherName,
+      cnic,
+      phone,
+      address,
+      areaId,
+      connectionNumber: conn || null,
+      routerNo: router || null,
+      createdAt: new Date().toISOString(),
+    };
+
+    if (monthlyFee !== undefined && !Number.isNaN(Number(monthlyFee))) {
+      doc.monthlyFee = Number(monthlyFee);
+    }
+
+    if (installationFee !== undefined && !Number.isNaN(Number(installationFee))) {
+      doc.installationFee = Number(installationFee);
+    }
+
+    return localDB.put(doc);
+  };
+
+  const getInternetEntriesByArea = async (areaId: string) => {
+    await localDB.createIndex({
+      index: { fields: ["type", "areaId"] },
+    });
+
+    const res = await localDB.find({
+      selector: { type: "internet-entry", areaId },
+    });
+
+    return res.docs;
+  };
+
+  const deleteInternetEntry = async (entry: any) => {
+    return localDB.remove(entry);
+  };
+
+  // AUTOMATIC SYNC ON INIT
   syncDB();
 
   return {
@@ -259,5 +312,8 @@ const createPerson = async (
     monthlyRevenue,
     monthlyRevenueHistory,
     getAllPersons,
+    createInternetEntry,
+    getInternetEntriesByArea,
+    deleteInternetEntry,
   };
 };
