@@ -25,6 +25,7 @@ const menuItems = [
   { name: "Remove Person", icon: faUserMinus, href: "/remove-person" },
   { name: "Update Record", icon: faPenToSquare, href: "/update-record" },
   { name: "Find Record", icon: faSearch, href: "/searchperson" },
+ 
   { name: "Find Person Record", icon: faClipboardList, href: "/find-person" },
   { name: "Report Menu", icon: faFileLines, href: "/ReportMenu" },
   { name: "Cash Received", icon: faReceipt, href: "/debitNote" },

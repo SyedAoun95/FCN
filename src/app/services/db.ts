@@ -291,6 +291,32 @@ export const initDB = async () => {
     return localDB.remove(entry);
   };
 
+  // ---------------------------
+  // SEARCH INTERNET ENTRIES (NAME, CNIC, OR CONNECTION NUMBER)
+  // ---------------------------
+  const searchInternetEntries = async (query: string) => {
+    if (!query.trim()) return [];
+
+    const q = query.toLowerCase();
+
+    await localDB.createIndex({
+      index: { fields: ["type", "name", "cnic", "connectionNumber"] },
+    });
+
+    const result = await localDB.find({
+      selector: {
+        type: "internet-entry",
+        $or: [
+          { name: { $regex: new RegExp(q, "i") } },
+          { cnic: { $regex: new RegExp(q, "i") } },
+          { connectionNumber: { $regex: new RegExp(q, "i") } },
+        ],
+      },
+    });
+
+    return result.docs;
+  };
+
   // AUTOMATIC SYNC ON INIT
   syncDB();
 
@@ -315,5 +341,6 @@ export const initDB = async () => {
     createInternetEntry,
     getInternetEntriesByArea,
     deleteInternetEntry,
+    searchInternetEntries,
   };
 };

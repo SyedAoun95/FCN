@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { initDB } from "../services/db";
 
 export default function InternetEntryPage() {
+  const router = useRouter();
   const [db, setDb] = useState<any>(null);
   const [areas, setAreas] = useState<any[]>([]);
   const [selectedArea, setSelectedArea] = useState("");
@@ -532,6 +534,13 @@ export default function InternetEntryPage() {
             className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-700 text-white rounded-lg hover:from-green-700 hover:to-emerald-800 transition-colors duration-200 font-medium"
           >
             Print Receipt
+          </button>
+          
+          <button
+            onClick={() => router.push('/find-internet-record')}
+            className="px-6 py-3 bg-gradient-to-r from-orange-600 to-red-700 text-white rounded-lg hover:from-orange-700 hover:to-red-800 transition-colors duration-200 font-medium"
+          >
+            Find Records
           </button>
         </div>
       </div>
