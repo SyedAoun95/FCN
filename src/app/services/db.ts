@@ -243,7 +243,8 @@ export const initDB = async () => {
     connectionNumber?: string,
     routerNo?: string,
     monthlyFee?: number,
-    installationFee?: number
+    installationFee?: number,
+    pendingAmount?: number
   ) => {
     if (!name.trim() || !areaId) throw new Error("Invalid input");
 
@@ -270,6 +271,10 @@ export const initDB = async () => {
 
     if (installationFee !== undefined && !Number.isNaN(Number(installationFee))) {
       doc.installationFee = Number(installationFee);
+    }
+
+    if (pendingAmount !== undefined && !Number.isNaN(Number(pendingAmount))) {
+      doc.pendingAmount = Number(pendingAmount);
     }
 
     return localDB.put(doc);

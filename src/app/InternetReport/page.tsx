@@ -16,6 +16,7 @@ export default function InternetReportPage() {
   const [selectedEntryId, setSelectedEntryId] = useState("");
   const [selectedEntryName, setSelectedEntryName] = useState("");
   const [selectedEntryFee, setSelectedEntryFee] = useState<number | null>(null);
+  const [selectedEntryInstallationFee, setSelectedEntryInstallationFee] = useState<number | null>(null);
   const [selectedEntryCreatedAt, setSelectedEntryCreatedAt] = useState<string | null>(null);
   const [monthlyBalances, setMonthlyBalances] = useState<any[]>([]);
   const [selectedMonth, setSelectedMonth] = useState<string>("");
@@ -69,6 +70,7 @@ export default function InternetReportPage() {
     }
     setSelectedEntryName(entry?.name || "");
     setSelectedEntryFee(entry?.monthlyFee ?? null);
+    setSelectedEntryInstallationFee(entry?.installationFee ?? null);
     setSelectedEntryCreatedAt(entry?.createdAt ?? null);
     setConnectionSuggestions([]);
     setConnectionQuery(entry ? String(entry.connectionNumber ?? entry.cnic ?? entry.name ?? "") : "");
@@ -242,7 +244,9 @@ export default function InternetReportPage() {
   const monthsCount = monthsBetween(startDate, new Date());
   const totalExpectedAllTime = expectedPerMonth * monthsCount;
   const totalPaidAllTime = records.reduce((s: number, r: any) => s + (Number(r.amount) || 0), 0);
-  const allTimeBalance = totalExpectedAllTime - totalPaidAllTime;
+  // total charges include expected monthly fees plus any installation fee
+  const totalChargesAllTime = totalExpectedAllTime + (Number(selectedEntryInstallationFee || 0));
+  const pendingRemainingAllTime = totalChargesAllTime - totalPaidAllTime;
 
   const printRecords = () => {
     const printWindow = window.open('', '', 'width=1200,height=600');
@@ -311,7 +315,7 @@ export default function InternetReportPage() {
           </tbody>
         </table>
 
-        <p style="margin-top:20px">All-time balance: Rs.${Number(allTimeBalance).toFixed(2)}</p>
+        <p style="margin-top:20px">All-time balance: Rs.${Number(pendingRemainingAllTime).toFixed(2)}</p>
       </body>
       </html>
     `);
@@ -476,7 +480,7 @@ export default function InternetReportPage() {
           <div className="flex justify-between items-start">
             <div>
               <p className="text-sm font-medium text-gray-600">All-time Balance</p>
-              <p className="text-2xl font-bold text-gray-900 mt-2">Rs.{Number(allTimeBalance).toFixed(2)}</p>
+              <p className="text-2xl font-bold text-gray-900 mt-2">Rs.{Number(pendingRemainingAllTime).toFixed(2)}</p>
             </div>
             <span className="text-xs font-semibold px-2 py-1 rounded bg-gray-100 text-gray-800">Balance</span>
           </div>
@@ -493,7 +497,7 @@ export default function InternetReportPage() {
               {selectedEntryId ? '✓' : '✗'}
             </span>
           </div>
-          <p className="text-xs text-gray-500 mt-4">Monthly fee: Rs.{Number(selectedEntryFee || 0).toFixed(2)}</p>
+          <p className="text-xs text-gray-500 mt-4">Monthly fee: Rs.{Number(selectedEntryFee || 0).toFixed(2)} | Installation: Rs.{Number(selectedEntryInstallationFee || 0).toFixed(2)}</p>
         </div>
       </div>
     </div>

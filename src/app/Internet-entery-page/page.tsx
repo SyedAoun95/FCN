@@ -20,6 +20,7 @@ export default function InternetEntryPage() {
   const [connectionNumber, setConnectionNumber] = useState("");
   const [routerNo, setRouterNo] = useState("");
   const [monthlyFee, setMonthlyFee] = useState<number | ''>('');
+  const [pendingAmount, setPendingAmount] = useState<number | ''>('');
   const [installationFee, setInstallationFee] = useState<number | ''>('');
   
   const [loading, setLoading] = useState(true);
@@ -90,7 +91,8 @@ export default function InternetEntryPage() {
         connectionNumber.trim() || undefined,
         routerNo.trim() || undefined,
         monthlyFee === '' ? undefined : Number(monthlyFee),
-        installationFee === '' ? undefined : Number(installationFee)
+        installationFee === '' ? undefined : Number(installationFee),
+        pendingAmount === '' ? undefined : Number(pendingAmount)
       );
       
       const allEntries = await db.getInternetEntriesByArea(areaId);
@@ -104,6 +106,7 @@ export default function InternetEntryPage() {
       setAddress("");
       setConnectionNumber("");
       setRouterNo("");
+      setPendingAmount("");
       setMonthlyFee('');
       setInstallationFee('');
       
@@ -340,6 +343,10 @@ export default function InternetEntryPage() {
               <span class="label">Installation Fee:</span>
               <span class="value">Rs.${installationFee === '' ? '0.00' : Number(installationFee).toFixed(2)}</span>
             </div>
+            <div class="detail-row">
+              <span class="label">Pending Amount:</span>
+              <span class="value">Rs.${pendingAmount === '' ? '0.00' : Number(pendingAmount).toFixed(2)}</span>
+            </div>
           </div>
           
           <div class="total-row">
@@ -474,7 +481,7 @@ export default function InternetEntryPage() {
         </div>
 
         {/* Fourth row: Connection Number, Router No, Monthly Fee, Installation Fee */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Connection Number (Optional)</label>
             <input
@@ -515,6 +522,17 @@ export default function InternetEntryPage() {
               value={installationFee === '' ? '' : installationFee}
               onChange={(e) => setInstallationFee(e.target.value === '' ? '' : Number(e.target.value))}
               placeholder="Enter installation fee..."
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 placeholder-gray-500"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Pending Amount (Optional)</label>
+            <input
+              type="number"
+              value={pendingAmount === '' ? '' : pendingAmount}
+              onChange={(e) => setPendingAmount(e.target.value === '' ? '' : Number(e.target.value))}
+              placeholder="Enter pending amount..."
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 placeholder-gray-500"
             />
           </div>
@@ -591,6 +609,9 @@ export default function InternetEntryPage() {
                       Installation Fee
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Pending Amount
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
@@ -628,6 +649,9 @@ export default function InternetEntryPage() {
                         <div className="text-sm text-gray-500">
                           {entry.installationFee ? `Rs.${Number(entry.installationFee).toFixed(2)}` : '-'}
                         </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-500">{entry.pendingAmount ? `Rs.${Number(entry.pendingAmount).toFixed(2)}` : '-'}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button 
