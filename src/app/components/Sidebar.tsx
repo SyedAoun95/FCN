@@ -27,6 +27,7 @@ const menuItems = [
   { name: "Find Record", icon: faSearch, href: "/searchperson" },
  
   { name: "Find Person Record", icon: faClipboardList, href: "/find-person" },
+  { name: "Internet Report", icon: faGlobe, href: "/InternetReport" },
   { name: "Report Menu", icon: faFileLines, href: "/ReportMenu" },
   { name: "Cash Received", icon: faReceipt, href: "/debitNote" },
    { name: "Login", icon: faRightToBracket, href: "/login" },
