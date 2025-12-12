@@ -1,7 +1,6 @@
 // app/layout.tsx
 import "./globals.css";
-import Sidebar from "./components/Sidebar";
-import DBInitializer from "../app/components/DBInitializer";
+import ClientLayoutWrapper from "./components/ClientLayoutWrapper";
 
 export const metadata = {
   title: "FCN || the brand",
@@ -11,19 +10,10 @@ export const metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="flex">
-
-        {/* Sidebar visible on all pages */}
-        <Sidebar />
-
-        {/* Page Content */}
-        <main className="flex-1 min-h-screen bg-gray-50 p-6">
-          {/* Initialize PouchDB + live sync */}
-          <DBInitializer />
-
+      <body>
+        <ClientLayoutWrapper>
           {children}
-        </main>
-
+        </ClientLayoutWrapper>
       </body>
     </html>
   );
