@@ -17,29 +17,28 @@ export default function LoginPage() {
   };
 
   return (
-    <div style={{ 
-      display: "flex", 
-      flexDirection: "column", 
-      alignItems: "center", 
-      justifyContent: "center", 
-      height: "100vh", 
-      gap: "20px" 
-    }}>
-      <h1>Login</h1>
+    <div className="min-h-screen flex items-center justify-center bg-black text-white px-4">
+      <div className="w-full max-w-md bg-gray-900/60 backdrop-blur-sm border border-gray-800 rounded-lg p-8">
+        <h1 className="text-2xl font-semibold mb-6 text-center">Login</h1>
 
-      <button 
-        onClick={handleAdminLogin} 
-        style={{ padding: "10px 20px", cursor: "pointer" }}
-      >
-        Login as Admin
-      </button>
+        <div className="flex flex-col gap-4">
+          <button
+            onClick={handleAdminLogin}
+            className="w-full px-4 py-3 bg-blue-600 rounded-md text-white hover:bg-blue-700 transition"
+            aria-label="Login as admin"
+          >
+            Login as Admin
+          </button>
 
-      <button 
-        onClick={handleOpLogin}
-        style={{ padding: "10px 20px", cursor: "pointer" }}
-      >
-        Login as Operator
-      </button>
+          <button
+            onClick={handleOpLogin}
+            className="w-full px-4 py-3 bg-green-600 rounded-md text-white hover:bg-green-700 transition"
+            aria-label="Login as operator"
+          >
+            Login as Operator
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

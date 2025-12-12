@@ -7,7 +7,8 @@ import DBInitializer from "./DBInitializer";
 
 export default function ClientLayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isWelcome = pathname === "/" || pathname === "";
+  // treat root and login routes as "welcome" screens where sidebar should be hidden
+  const isWelcome = pathname === "/" || pathname === "" || pathname.startsWith("/login");
 
   return (
     <div className={`flex ${isWelcome ? 'bg-black text-white' : ''}`}>
