@@ -13,7 +13,7 @@ import {
   faReceipt,
   faFileLines,
   faRightToBracket,
-  faGlobe,          // Internet Entry Icon
+  faGlobe,       
 } from "@fortawesome/free-solid-svg-icons";
 import Link from 'next/link';
 // icons for sidebar menu
