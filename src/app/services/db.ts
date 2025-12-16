@@ -325,6 +325,47 @@ export const initDB = async () => {
   // AUTOMATIC SYNC ON INIT
   syncDB();
 
+  // ---------------------------
+  // USER AUTH
+  // ---------------------------
+  const createUser = async (username: string, password: string, role: 'admin' | 'op') => {
+    if (!username.trim() || !password.trim()) throw new Error("Invalid input");
+
+    // Check if user exists
+    const existing = await localDB.find({
+      selector: { type: "user", username: username.toLowerCase() }
+    });
+    if (existing.docs.length > 0) throw new Error("User already exists");
+
+    const doc = {
+      _id: `user_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+      type: "user",
+      username: username.toLowerCase(),
+      password: btoa(password), // Simple base64 encoding (not secure, but for demo)
+      role,
+      createdAt: new Date().toISOString(),
+    };
+
+    return localDB.put(doc);
+  };
+
+  const getUser = async (username: string, password: string) => {
+    const res = await localDB.find({
+      selector: { type: "user", username: username.toLowerCase() }
+    });
+    if (res.docs.length === 0) return null;
+    const user = res.docs[0] as any;
+    if (atob(user.password) === password) {
+      return { username: user.username, role: user.role };
+    }
+    return null;
+  };
+
+  const getAllUsers = async () => {
+    const res = await localDB.find({ selector: { type: "user" } });
+    return res.docs;
+  };
+
   return {
     localDB,
     remoteDB,
@@ -347,5 +388,8 @@ export const initDB = async () => {
     getInternetEntriesByArea,
     deleteInternetEntry,
     searchInternetEntries,
+    createUser,
+    getUser,
+    getAllUsers,
   };
 };
