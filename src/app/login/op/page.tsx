@@ -1,5 +1,3 @@
-// src/app/login/op/page.tsx
-
 "use client";
 
 import { useState } from "react";
@@ -13,7 +11,7 @@ export default function OpLogin() {
   const login = async () => {
     const res = await fetch("/api/couchdb-login", {
       method: "POST",
-      body: JSON.stringify({ username, password })
+      body: JSON.stringify({ username, password }),
     });
 
     const data = await res.json();
@@ -26,28 +24,36 @@ export default function OpLogin() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen bg-gray-200">
-      <h2 className="text-2xl font-bold mb-6">Operator Login</h2>
+    <div className="min-h-screen flex items-center justify-center bg-gray-200 px-6">
+      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl p-12 border">
+        <h2 className="text-4xl font-bold text-center mb-3">
+          Operator Login
+        </h2>
 
-      <input
-        className="mb-4 px-4 py-2 border rounded-lg w-64"
-        placeholder="Operator Username"
-        onChange={(e) => setUsername(e.target.value)}
-      />
+        <p className="text-center text-gray-500 mb-10">
+          Enter your operator credentials
+        </p>
 
-      <input
-        type="password"
-        className="mb-4 px-4 py-2 border rounded-lg w-64"
-        placeholder="Password"
-        onChange={(e) => setPassword(e.target.value)}
-      />
+        <input
+          className="w-full mb-6 px-6 py-4 text-lg border rounded-xl focus:ring-2 focus:ring-green-500"
+          placeholder="Operator Username"
+          onChange={(e) => setUsername(e.target.value)}
+        />
 
-      <button
-        onClick={login}
-        className="px-5 py-2 bg-green-600 text-white rounded-lg"
-      >
-        Login
-      </button>
+        <input
+          type="password"
+          className="w-full mb-8 px-6 py-4 text-lg border rounded-xl focus:ring-2 focus:ring-green-500"
+          placeholder="Password"
+          onChange={(e) => setPassword(e.target.value)}
+        />
+
+        <button
+          onClick={login}
+          className="w-full py-4 text-lg bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold transition"
+        >
+          Login
+        </button>
+      </div>
     </div>
   );
 }

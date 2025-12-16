@@ -14,8 +14,8 @@ export default function AdminLoginPage() {
       alert("Please enter username and password");
       return;
     }
-    setLoading(true);
 
+    setLoading(true);
     const res = await fetch("/api/couchdb-login", {
       method: "POST",
       body: JSON.stringify({ username, password }),
@@ -33,28 +33,24 @@ export default function AdminLoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-6">
-      <div className="bg-white shadow-sm border border-gray-200 rounded-xl p-8 w-full max-w-md">
-        
-        <h2 className="text-3xl font-bold text-gray-800 text-center mb-2">
-          Login as Admin
+      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl p-12 border">
+        <h2 className="text-4xl font-bold text-center mb-3">
+          Admin Login
         </h2>
-        <p className="text-center text-gray-500 mb-8">
-          Enter your admin credentials to continue
+
+        <p className="text-center text-gray-500 mb-10">
+          Sign in to access the admin dashboard
         </p>
 
         <input
-          className="w-full mb-4 px-4 py-3 border border-gray-300 rounded-lg 
-                     focus:ring-2 focus:ring-blue-500 focus:border-transparent 
-                     text-gray-800 placeholder-gray-500"
+          className="w-full mb-6 px-6 py-4 text-lg border rounded-xl focus:ring-2 focus:ring-blue-500"
           placeholder="Admin Username"
           onChange={(e) => setUsername(e.target.value)}
         />
 
         <input
           type="password"
-          className="w-full mb-6 px-4 py-3 border border-gray-300 rounded-lg 
-                     focus:ring-2 focus:ring-blue-500 focus:border-transparent 
-                     text-gray-800 placeholder-gray-500"
+          className="w-full mb-8 px-6 py-4 text-lg border rounded-xl focus:ring-2 focus:ring-blue-500"
           placeholder="Password"
           onChange={(e) => setPassword(e.target.value)}
         />
@@ -62,20 +58,10 @@ export default function AdminLoginPage() {
         <button
           onClick={login}
           disabled={loading}
-          className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 
-                     text-white rounded-lg font-medium transition"
+          className="w-full py-4 text-lg bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition"
         >
           {loading ? "Logging in..." : "Login"}
         </button>
-
-        <button
-          onClick={() => alert("Signup system coming soon")}
-          className="w-full mt-4 px-6 py-3 bg-gray-100 text-gray-700 
-                     hover:bg-gray-200 rounded-lg transition"
-        >
-          Signup Instead
-        </button>
-
       </div>
     </div>
   );
