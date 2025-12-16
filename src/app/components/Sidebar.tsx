@@ -13,7 +13,8 @@ import {
   faReceipt,
   faFileLines,
   faRightToBracket,
-  faGlobe,       
+  faGlobe,
+  faExclamationTriangle, // For defaulter lists
 } from "@fortawesome/free-solid-svg-icons";
 import Link from 'next/link';
 // icons for sidebar menu
@@ -30,6 +31,7 @@ const menuItems = [
   { name: "Internet Report", icon: faGlobe, href: "/InternetReport" },
   { name: "Report Menu", icon: faFileLines, href: "/ReportMenu" },
   { name: "Cash Received", icon: faReceipt, href: "/debitNote" },
+  { name: "Defaulter Lists", icon: faExclamationTriangle, href: "/defaulter-lists" },
    { name: "Login", icon: faRightToBracket, href: "/login" },
 
 ];
