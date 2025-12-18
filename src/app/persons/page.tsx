@@ -12,6 +12,7 @@ export default function PersonsPage() {
   const [personConnectionNumber, setPersonConnectionNumber] = useState("");
   const [personAddress, setPersonAddress] = useState("");
   const [monthlyFee, setMonthlyFee] = useState<number | ''>('');
+  const [amountPaid, setAmountPaid] = useState<number | ''>(''); // New state for amount paid
   const [loading, setLoading] = useState(true);
   const receiptRef = useRef<HTMLDivElement>(null);
 
@@ -66,6 +67,13 @@ export default function PersonsPage() {
       return;
     }
 
+    if (amountPaid === '' || Number.isNaN(Number(amountPaid))) {
+      alert('Please enter the amount paid');
+      return;
+    }
+
+    const remainingBalance = Number(monthlyFee) - Number(amountPaid);
+
     try {
       // Pass the address parameter to createPerson function
       await db.createPerson(
@@ -73,7 +81,9 @@ export default function PersonsPage() {
         areaId, 
         personConnectionNumber.trim(), 
         Number(monthlyFee), 
-        personAddress.trim()  // This is the address field
+        personAddress.trim(),
+        Number(amountPaid), // Include amount paid
+        remainingBalance // Include remaining balance
       );
       
       // Refresh the persons list
@@ -85,6 +95,7 @@ export default function PersonsPage() {
       setMonthlyFee('');
       setPersonConnectionNumber('');
       setPersonAddress('');
+      setAmountPaid('');
     } catch (err: any) {
       alert(err?.message || 'Failed to add person');
     }
@@ -398,8 +409,8 @@ export default function PersonsPage() {
           </div>
         </div>
 
-        {/* Second row: Address and Monthly Fee */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        {/* Second row: Address, Monthly Fee, and Amount Paid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
             <input
@@ -418,6 +429,17 @@ export default function PersonsPage() {
               value={monthlyFee === '' ? '' : monthlyFee}
               onChange={(e) => setMonthlyFee(e.target.value === '' ? '' : Number(e.target.value))}
               placeholder="Enter monthly fee"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 placeholder-gray-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Amount Paid</label>
+            <input
+              type="number"
+              value={amountPaid === '' ? '' : amountPaid}
+              onChange={(e) => setAmountPaid(e.target.value === '' ? '' : Number(e.target.value))}
+              placeholder="Enter amount paid"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 placeholder-gray-500"
             />
           </div>
@@ -472,6 +494,9 @@ export default function PersonsPage() {
                       Monthly Fee
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Remaining Balance
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -495,6 +520,9 @@ export default function PersonsPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-500">{person.amount ? `$${Number(person.amount).toFixed(2)}` : '-'}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-500">Rs.{(person.remainingBalance || 0).toFixed(2)}</div> {/* Fallback to 0 if undefined */}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">

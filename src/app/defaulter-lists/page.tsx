@@ -22,6 +22,7 @@ interface Defaulter {
   connectionNumber?: string;
   unpaidMonths: number;
   accumulatedBalance: number;
+  currentMonthBalance: number; // Added field for current month's balance
 }
 
 export default function DefaulterListsPage() {
@@ -51,7 +52,6 @@ export default function DefaulterListsPage() {
     const defaulterList: Defaulter[] = [];
 
     for (const person of persons) {
-      // Check if person has a debit for the selected month
       const debits = await db.localDB.find({
         selector: {
           type: "debit",
@@ -59,38 +59,37 @@ export default function DefaulterListsPage() {
           month: selectedMonth
         }
       });
-      if (debits.docs.length === 0) {
-        // No payment for this month, calculate accumulated unpaid
-        const personStart = new Date((person as any).createdAt);
-        const selectedDate = new Date(selectedMonth + "-01");
-        const monthsDiff = Math.max(0, (selectedDate.getFullYear() - personStart.getFullYear()) * 12 + (selectedDate.getMonth() - personStart.getMonth()) + 1);
-        const unpaidMonths = monthsDiff; // Assuming no payments at all, but actually need to check all months
-        // For simplicity, count months from start to selected where no debit exists
-        let unpaidCount = 0;
-        for (let i = 0; i < monthsDiff; i++) {
-          const checkDate = new Date(personStart.getFullYear(), personStart.getMonth() + i, 1);
-          const checkMonth = checkDate.toISOString().slice(0, 7); // YYYY-MM
-          const checkDebits = await db.localDB.find({
-            selector: {
-              type: "debit",
-              personId: person._id,
-              month: checkMonth
-            }
-          });
-          if (checkDebits.docs.length === 0) {
-            unpaidCount++;
-          }
-        }
-        const accumulatedBalance = unpaidCount * ((person as any).monthlyFee || 0);
-        if (accumulatedBalance > 0) {
-          defaulterList.push({
+
+      const currentMonthBalance = debits.docs.reduce((sum, debit: any) => sum + (debit.amount || 0), 0); // Properly typed debit object
+
+      const personStart = new Date((person as any).createdAt);
+      const selectedDate = new Date(selectedMonth + "-01");
+      const monthsDiff = Math.max(0, (selectedDate.getFullYear() - personStart.getFullYear()) * 12 + (selectedDate.getMonth() - personStart.getMonth()) + 1);
+      let unpaidCount = 0;
+      for (let i = 0; i < monthsDiff; i++) {
+        const checkDate = new Date(personStart.getFullYear(), personStart.getMonth() + i, 1);
+        const checkMonth = checkDate.toISOString().slice(0, 7);
+        const checkDebits = await db.localDB.find({
+          selector: {
+            type: "debit",
             personId: person._id,
-            personName: (person as any).name,
-            connectionNumber: (person as any).connectionNumber,
-            unpaidMonths: unpaidCount,
-            accumulatedBalance
-          });
+            month: checkMonth
+          }
+        });
+        if (checkDebits.docs.length === 0) {
+          unpaidCount++;
         }
+      }
+      const accumulatedBalance = unpaidCount * ((person as any).monthlyFee || 0);
+      if (accumulatedBalance > 0 || currentMonthBalance > 0) {
+        defaulterList.push({
+          personId: person._id,
+          personName: (person as any).name,
+          connectionNumber: (person as any).connectionNumber,
+          unpaidMonths: unpaidCount,
+          accumulatedBalance,
+          currentMonthBalance
+        });
       }
     }
 
@@ -112,6 +111,7 @@ export default function DefaulterListsPage() {
         <td style="padding:8px;border-bottom:1px solid #eee">${d.connectionNumber || '-'}</td>
         <td style="padding:8px;border-bottom:1px solid #eee">${d.unpaidMonths}</td>
         <td style="padding:8px;border-bottom:1px solid #eee">Rs.${d.accumulatedBalance.toFixed(2)}</td>
+        <td style="padding:8px;border-bottom:1px solid #eee">Rs.${d.currentMonthBalance.toFixed(2)}</td> <!-- Added field for current month's balance -->
       </tr>
     `).join('');
 
@@ -137,6 +137,7 @@ export default function DefaulterListsPage() {
               <th>Connection Number</th>
               <th>Unpaid Months</th>
               <th>Accumulated Balance</th>
+              <th>Current Month Balance</th> <!-- Added header for current month's balance -->
             </tr>
           </thead>
           <tbody>
@@ -211,6 +212,7 @@ export default function DefaulterListsPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Connection Number</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unpaid Months</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Accumulated Balance</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Month Balance</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -220,6 +222,7 @@ export default function DefaulterListsPage() {
                     <td className="px-6 py-4 whitespace-nowrap"><div className="text-sm text-gray-500">{d.connectionNumber || '-'}</div></td>
                     <td className="px-6 py-4 whitespace-nowrap"><div className="text-sm text-gray-500">{d.unpaidMonths}</div></td>
                     <td className="px-6 py-4 whitespace-nowrap"><div className="text-sm text-gray-500">Rs.{d.accumulatedBalance.toFixed(2)}</div></td>
+                    <td className="px-6 py-4 whitespace-nowrap"><div className="text-sm text-gray-500">Rs.{d.currentMonthBalance.toFixed(2)}</div></td>
                   </tr>
                 ))}
               </tbody>
