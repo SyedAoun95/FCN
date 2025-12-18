@@ -128,22 +128,37 @@ export default function DefaulterListsPage() {
         </style>
       </head>
       <body>
-        <h1>Defaulter Lists for ${selectedMonth}</h1>
-        <p>Area: ${areas.find(a => a._id === selectedArea)?.name || selectedArea}</p>
-        <table>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Connection Number</th>
-              <th>Unpaid Months</th>
-              <th>Accumulated Balance</th>
-              <th>Current Month Balance</th> <!-- Added header for current month's balance -->
-            </tr>
-          </thead>
-          <tbody>
-            ${tableRows}
-          </tbody>
-        </table>
+        <div class="receipt-container">
+          <!-- Urdu Header -->
+          <div class="urdu-header">
+            <h2>فیملی کیبل نیٹ ورک</h2>
+          </div>
+          
+          <!-- Urdu Names Section -->
+          <div class="urdu-names">
+            <h3>خالد محمود خان</h3>
+            <div class="ceo-title">CEO's</div>
+            <div class="owner-name">سید محمد رضا شاہ</div>
+          </div>
+
+          <!-- Existing content continues here -->
+          <h1>Defaulter Lists for ${selectedMonth}</h1>
+          <p>Area: ${areas.find(a => a._id === selectedArea)?.name || selectedArea}</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Connection Number</th>
+                <th>Unpaid Months</th>
+                <th>Accumulated Balance</th>
+                <th>Current Month Balance</th> <!-- Added header for current month's balance -->
+              </tr>
+            </thead>
+            <tbody>
+              ${tableRows}
+            </tbody>
+          </table>
+        </div>
       </body>
       </html>
     `);

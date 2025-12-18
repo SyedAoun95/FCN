@@ -122,7 +122,7 @@ export default function PersonsPage() {
   const selectedAreaName = areas.find(a => a._id === selectedArea)?.name || '';
   
   // Create receipt content
-  const printWindow = window.open('', '_blank');
+  const printWindow = window.open('', '_blank', 'width=800,height=600');
   if (!printWindow) {
     alert('Please allow pop-ups to print receipt');
     return;
@@ -275,8 +275,6 @@ export default function PersonsPage() {
           <div class="owner-name">سید محمد رضا شاہ</div>
         </div>
         
-      
-        
         <div class="date">
           Date: ${new Date().toLocaleDateString()}<br>
           Time: ${new Date().toLocaleTimeString()}
@@ -309,13 +307,13 @@ export default function PersonsPage() {
           </div>
           <div class="detail-row">
             <span class="label">Monthly Fee:</span>
-            <span class="value">Rs.${Number(monthlyFee).toFixed(2)}</span>
+            <span class="value">Rs.${monthlyFee !== '' ? Number(monthlyFee).toFixed(2) : '0.00'}</span>
           </div>
         </div>
         
         <div class="total-row">
           <span>Monthly Charge:</span>
-          <span>Rs.${Number(monthlyFee).toFixed(2)}</span>
+          <span>Rs.${monthlyFee !== '' ? Number(monthlyFee).toFixed(2) : '0.00'}</span>
         </div>
         
         <div class="thank-you">
@@ -343,6 +341,97 @@ export default function PersonsPage() {
   
   printWindow.document.close();
 };
+
+  const printPersonsList = () => {
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    if (!printWindow) {
+      alert('Please allow pop-ups to print the persons list');
+      return;
+    }
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Persons List</title>
+        <style>
+          body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #fff;
+          }
+          .urdu-header {
+            text-align: center;
+            margin-bottom: 15px;
+            direction: rtl;
+          }
+          .urdu-header h2 {
+            margin: 0;
+            color: #333;
+            font-size: 24px;
+            font-weight: bold;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+          }
+          th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+          }
+          th {
+            background-color: #f4f4f4;
+            font-weight: bold;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="urdu-header">
+          <h2>فیملی کیبل نیٹ ورک</h2>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Conn #</th>
+              <th>Person Name</th>
+              <th>Address</th>
+              <th>Monthly Fee</th>
+              <th>Remaining Balance</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${persons.map(person => `
+              <tr>
+                <td>${person.connectionNumber ?? '-'}</td>
+                <td>${person.name}</td>
+                <td>${person.address && person.address !== '-' ? person.address : '-'}</td>
+                <td>Rs.${person.monthlyFee !== undefined ? Number(person.monthlyFee).toFixed(2) : '0.00'}</td>
+                <td>Rs.${person.remainingBalance !== undefined ? Number(person.remainingBalance).toFixed(2) : '0.00'}</td>
+                <td>Active</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        <script>
+          window.onload = function() {
+            window.print();
+            setTimeout(function() {
+              window.close();
+            }, 1000);
+          };
+        </script>
+      </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+  };
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50">
@@ -509,7 +598,7 @@ export default function PersonsPage() {
                     <tr key={person._id} className="hover:bg-gray-50 transition-colors duration-150">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">{person.connectionNumber ?? '-'}</div>
-                      </td>
+                      </td> 
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">{person.name}</div>
                       </td>
@@ -543,6 +632,18 @@ export default function PersonsPage() {
               </table>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Print Button for Persons List */}
+      {selectedArea && persons.length > 0 && (
+        <div className="mt-4">
+          <button
+            onClick={printPersonsList}
+            className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-700 text-white rounded-lg hover:from-green-700 hover:to-emerald-800 transition-colors duration-200 font-medium"
+          >
+            Print List
+          </button>
         </div>
       )}
 

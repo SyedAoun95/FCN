@@ -275,6 +275,20 @@ export default function InternetReportPage() {
         </style>
       </head>
       <body>
+        <div class="receipt-container">
+          <!-- Urdu Header -->
+          <div class="urdu-header">
+            <h2>فیملی کیبل نیٹ ورک</h2>
+          </div>
+          
+          <!-- Urdu Names Section -->
+          <div class="urdu-names">
+            <h3>خالد محمود خان</h3>
+            <div class="ceo-title">CEO's</div>
+            <div class="owner-name">سید محمد رضا شاہ</div>
+          </div>
+
+          <!-- Existing content continues here -->
         <h1>Internet Entries Report</h1>
         <p>Area: ${selectedArea ? (areas.find(a => a._id === selectedArea)?.name || selectedArea) : 'All'}</p>
         <p>Entry: ${selectedEntryName || 'All'}</p>

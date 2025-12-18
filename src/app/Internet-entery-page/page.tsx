@@ -292,7 +292,7 @@ export default function InternetEntryPage() {
             <div class="ceo-title">CEO's</div>
             <div class="owner-name">سید محمد رضا شاہ</div>
           </div>
-          
+
           <div class="date">
             Date: ${new Date().toLocaleDateString()}<br>
             Time: ${new Date().toLocaleTimeString()}

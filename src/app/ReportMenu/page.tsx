@@ -282,6 +282,18 @@ export default function ReportMenuPage() {
         </style>
       </head>
       <body>
+           <div class="receipt-container">
+        <!-- Urdu Header -->
+        <div class="urdu-header" style="display: flex; justify-content: center; align-items: center;">
+          <h2>فیملی کیبل نیٹ ورک</h2>
+        </div>
+        
+        <!-- Urdu Names Section -->
+        <div class="urdu-names" style="display: flex; justify-content: center; align-items: center;">
+          <h3>خالد محمود خان</h3>
+          <div class="ceo-title">CEO's</div>
+          <div class="owner-name">سید محمد رضا شاہ</div>
+        </div>
         <h1>Monthly Balance Report</h1>
         <p><strong>Person:</strong> ${selectedPersonName || 'N/A'}</p>
         <p><strong>Connection #:</strong> ${connectionQuery || 'N/A'}</p>
