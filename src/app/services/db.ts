@@ -328,6 +328,20 @@ export const initDB = async () => {
   // ---------------------------
   // USER AUTH
   // ---------------------------
+  const hashPassword = async (password: string): Promise<string> => {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(password);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+    return Array.from(new Uint8Array(hashBuffer))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+  };
+
+  const verifyPassword = async (password: string, hashedPassword: string): Promise<boolean> => {
+    const hashedInput = await hashPassword(password);
+    return hashedInput === hashedPassword;
+  };
+
   const createUser = async (username: string, password: string, role: 'admin' | 'op') => {
     if (!username.trim() || !password.trim()) throw new Error("Invalid input");
 
@@ -337,11 +351,14 @@ export const initDB = async () => {
     });
     if (existing.docs.length > 0) throw new Error("User already exists");
 
+    // Hash the password
+    const hashedPassword = await hashPassword(password);
+
     const doc = {
       _id: `user_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
       type: "user",
       username: username.toLowerCase(),
-      password: btoa(password), // Simple base64 encoding (not secure, but for demo)
+      password: hashedPassword, // Store hashed password
       role,
       createdAt: new Date().toISOString(),
     };
@@ -355,7 +372,10 @@ export const initDB = async () => {
     });
     if (res.docs.length === 0) return null;
     const user = res.docs[0] as any;
-    if (atob(user.password) === password) {
+
+    // Verify the password
+    const isPasswordValid = await verifyPassword(password, user.password);
+    if (isPasswordValid) {
       return { username: user.username, role: user.role };
     }
     return null;
