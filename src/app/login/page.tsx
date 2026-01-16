@@ -30,7 +30,11 @@ export default function LoginPage() {
         setMode('login');
       } else if (mode === 'login') {
         const user = await db.getUser(username, password);
+        console.log('Login response:', user); // Debugging log
+
+        // Trust the result of db.getUser
         if (user) {
+          console.log('Login successful, redirecting...'); // Debugging log
           localStorage.setItem("role", user.role);
           localStorage.setItem("username", user.username);
           if (user.role === 'admin') {
@@ -39,12 +43,13 @@ export default function LoginPage() {
             router.push("/op");
           }
         } else {
+          console.error('Invalid username or password'); // Debugging log
           setError('Invalid username or password');
         }
       } else if (mode === 'forgot') {
         const users = await db.getAllUsers();
         const user = users.find((u: any) => u.username === username.toLowerCase());
-        if (user) {
+        if (user && 'password' in user && typeof user.password === 'string') {
           setSuccess(`Password hint: ${atob(user.password).slice(0, 2)}**`);
         } else {
           setError('User not found');
