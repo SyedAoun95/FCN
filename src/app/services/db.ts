@@ -329,17 +329,27 @@ export const initDB = async () => {
   // USER AUTH
   // ---------------------------
   const hashPassword = async (password: string): Promise<string> => {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(password);
-    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-    return Array.from(new Uint8Array(hashBuffer))
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
+    try {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(password);
+      const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+      return Array.from(new Uint8Array(hashBuffer))
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+    } catch (error) {
+      console.error("Error hashing password:", error);
+      throw new Error("Failed to hash password");
+    }
   };
 
   const verifyPassword = async (password: string, hashedPassword: string): Promise<boolean> => {
-    const hashedInput = await hashPassword(password);
-    return hashedInput === hashedPassword;
+    try {
+      const hashedInput = await hashPassword(password);
+      return hashedInput === hashedPassword;
+    } catch (error) {
+      console.error("Error verifying password:", error);
+      return false;
+    }
   };
 
   const createUser = async (username: string, password: string, role: 'admin' | 'op') => {

@@ -307,13 +307,13 @@ export default function PersonsPage() {
           </div>
           <div class="detail-row">
             <span class="label">Monthly Fee:</span>
-            <span class="value">Rs.${monthlyFee !== '' ? Number(monthlyFee).toFixed(2) : '0.00'}</span>
+            <span class="value">Rs.${typeof monthlyFee === 'string' ? parseFloat(monthlyFee).toFixed(2) : monthlyFee.toFixed(2)}</span>
           </div>
         </div>
         
         <div class="total-row">
           <span>Monthly Charge:</span>
-          <span>Rs.${monthlyFee !== '' ? Number(monthlyFee).toFixed(2) : '0.00'}</span>
+          <span>Rs.${typeof monthlyFee === 'string' ? parseFloat(monthlyFee).toFixed(2) : monthlyFee.toFixed(2)}</span>
         </div>
         
         <div class="thank-you">
