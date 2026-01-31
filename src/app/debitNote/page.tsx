@@ -438,7 +438,7 @@ export default function CashReceivedPage() {
 						)}
 
 						<div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
-							<div className="text-xs text-gray-600">All-time balance</div>
+							<div className="text-xs text-gray-600">Remaining balance</div>
 							<div className="text-lg font-semibold text-black">${Number(allTimeBalance).toFixed(2)}</div>
 						</div>
 					</div>
