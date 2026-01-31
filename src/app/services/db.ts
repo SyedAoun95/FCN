@@ -8,21 +8,90 @@ export const initDB = async () => {
   PouchDB.plugin(PouchDBFind);
 
   const localDB = new PouchDB("crud-database");
-  const remoteDB = new PouchDB(
-     "http://admin:512141@127.0.0.1:5984/db_fcn"
+  //new test code 
+  // ---------------------------
+// REMOTE DB AND LIVE SYNC
+// ---------------------------
+let remoteDB: PouchDB.Database | null = null;
+let syncHandler: PouchDB.Replication.Sync<any> | null = null;
+
+const getCouchDBUrl = (): string | null => {
+  const url = localStorage.getItem("COUCHDB_URL");
+  if (!url || !url.trim()) return null;
+  return url.trim();
+};
+
+const initRemoteDB = () => {
+  const url = getCouchDBUrl();
+  if (!url) return null;
+  if (!remoteDB) {
+    console.log("Initializing remote CouchDB:", url);
+    remoteDB = new PouchDB(url, { skip_setup: false });
+  }
+  return remoteDB;
+};
+
+const syncDB = () => {
+  const rdb = initRemoteDB();
+  if (!rdb || syncHandler) return;
+
+  console.log("Starting live sync with CouchDB");
+
+  syncHandler = localDB
+    .sync(rdb, {
+      live: true,
+      retry: true,
+      heartbeat: 10000,
+      timeout: false,
+    })
+    .on("change", (info) => console.log("DB Change:", info))
+    .on("paused", () => console.log("Sync paused"))
+    .on("active", () => console.log("Sync active"))
+    .on("error", (err) => {
+      console.error("Sync error:", err);
+      syncHandler = null;
+    });
+};
+
+// Auto-start sync if online
+if (typeof window !== "undefined") {
+  window.addEventListener("online", syncDB);
+  window.addEventListener("offline", () =>
+    console.log("Offline – working locally")
   );
+
+  if (navigator.onLine) syncDB();
+}
+
+  // const remoteDB = new PouchDB(
+  //    "http://admin:512141@127.0.0.1:5984/db_fcn"
+  // );
 
   // ---------------------------
   // LIVE TWO-WAY SYNC
   // ---------------------------
-  const syncDB = () => {
-    localDB
-      .sync(remoteDB, { live: true, retry: true })
-      .on("change", (info) => console.log("DB Change:", info))
-      .on("paused", () => console.log("Sync paused"))
-      .on("active", () => console.log("Sync active"))
-      .on("error", (err) => console.error("Sync error:", err));
-  };
+  // const syncDB = () => {
+  //   localDB
+  //     .sync(remoteDB, { live: true, retry: true })
+  //     .on("change", (info) => console.log("DB Change:", info))
+  //     .on("paused", () => console.log("Sync paused"))
+  //     .on("active", () => console.log("Sync active"))
+  //     .on("error", (err) => console.error("Sync error:", err));
+  // };
+// ui based helper 
+const setCouchDBUrl = (url: string) => {
+  if (!url.trim()) throw new Error("Invalid CouchDB URL");
+  localStorage.setItem("COUCHDB_URL", url.trim());
+
+  if (syncHandler) {
+    syncHandler.cancel();
+    syncHandler = null;
+  }
+  remoteDB = null;
+
+  syncDB();
+};
+
 
   // ---------------------------
   // REAL-TIME CHANGES LISTENER
