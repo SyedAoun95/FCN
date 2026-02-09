@@ -38,69 +38,101 @@ export default function PersonsPage() {
     console.log("New person added - check remainingBalance:", allPersons[allPersons.length - 1]);
   };
 
-  const addPerson = async () => {
-    if (!db) return;
+ const addPerson = async () => {
+  if (!db) return;
 
-    // Require an area selected for person creation
-    let areaId = selectedArea;
-    if (!areaId) {
-      alert('Please select an area for the person');
-      return;
+  let areaId = selectedArea;
+  if (!areaId) {
+    alert('Please select an area for the person');
+    return;
+  }
+
+  if (!personName.trim()) {
+    alert('Please enter person name');
+    return;
+  }
+
+  if (!personConnectionNumber.trim()) {
+    alert('Please enter a connection number for the person');
+    return;
+  }
+
+  if (!personAddress.trim()) {
+    alert('Please enter person address');
+    return;
+  }
+
+  if (monthlyFee === '' || Number.isNaN(Number(monthlyFee))) {
+    alert('Please enter monthly fee');
+    return;
+  }
+
+  if (amountPaid === '' || Number.isNaN(Number(amountPaid))) {
+    alert('Please enter the amount paid');
+    return;
+  }
+
+  const remainingBalance = Number(monthlyFee) - Number(amountPaid);
+
+  try {
+    await db.createPerson(
+      personName, 
+      areaId, 
+      personConnectionNumber.trim(), 
+      Number(monthlyFee), 
+      personAddress.trim(),
+      Number(amountPaid),
+      remainingBalance
+    );
+    
+    const allPersons = await db.getPersonsByArea(areaId);
+    setPersons(allPersons);
+
+    console.log('Person created successfully:', allPersons[allPersons.length - 1]);
+
+    if (Number(amountPaid) > 0) {
+      const newPerson = allPersons.find((p: any) => p.connectionNumber === personConnectionNumber.trim());
+      if (newPerson) {
+        const currentMonth = new Date().toISOString().slice(0, 7);
+        console.log('Creating debit for month:', currentMonth);
+
+        const debitDoc = {
+          _id: `debit_${areaId}_${newPerson._id}_${Date.now()}`,
+          type: "debit",
+          areaId,
+          personId: newPerson._id,
+          personName,
+          personAddress: personAddress.trim(),
+          personMonthlyFee: Number(monthlyFee),
+          connectionNumber: personConnectionNumber.trim(),
+          month: currentMonth,
+          amount: Number(amountPaid),
+          expectedAmount: Number(monthlyFee),
+          remainingAfterPayment: remainingBalance,
+          createdAt: new Date().toISOString(),
+        };
+
+        try {
+          await db.localDB.put(debitDoc);
+          console.log('Debit record saved successfully:', debitDoc);
+        } catch (debitError: any) {
+          console.error('Error saving debit record:', debitError);
+          alert('Person added, but failed to log initial payment: ' + (debitError?.message || 'Unknown error'));
+        }
+      } else {
+        console.error('New person not found in refreshed list');
+      }
     }
-
-    if (!personName.trim()) {
-      alert('Please enter person name');
-      return;
-    }
-
-    if (!personConnectionNumber.trim()) {
-      alert('Please enter a connection number for the person');
-      return;
-    }
-
-    if (!personAddress.trim()) {
-      alert('Please enter person address');
-      return;
-    }
-
-    if (monthlyFee === '' || Number.isNaN(Number(monthlyFee))) {
-      alert('Please enter monthly fee');
-      return;
-    }
-
-    if (amountPaid === '' || Number.isNaN(Number(amountPaid))) {
-      alert('Please enter the amount paid');
-      return;
-    }
-
-    const remainingBalance = Number(monthlyFee) - Number(amountPaid);
-
-    try {
-      // Pass the address parameter to createPerson function
-      await db.createPerson(
-        personName, 
-        areaId, 
-        personConnectionNumber.trim(), 
-        Number(monthlyFee), 
-        personAddress.trim(),
-        Number(amountPaid), // Include amount paid
-        remainingBalance // Include remaining balance
-      );
-      
-      // Refresh the persons list
-      const allPersons = await db.getPersonsByArea(areaId);
-      setPersons(allPersons);
-      
-      // Clear the form fields
-      setPersonName("");
-      setMonthlyFee('');
-      setPersonConnectionNumber('');
-      setPersonAddress('');
-      setAmountPaid('');
-    } catch (err: any) {
-      alert(err?.message || 'Failed to add person');
-    }
-  };
+    
+    setPersonName("");
+    setMonthlyFee('');
+    setPersonConnectionNumber('');
+    setPersonAddress('');
+    setAmountPaid('');
+  } catch (err: any) {
+    alert(err?.message || 'Failed to add person');
+  }
+};
 
   const deletePerson = async (person: any) => {
     if (!db) return;
