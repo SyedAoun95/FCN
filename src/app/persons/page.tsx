@@ -343,7 +343,7 @@ export default function PersonsPage() {
     <span class="value">Rs.${Number(amountPaid).toFixed(2)}</span>
   </div>
   <div class="detail-row" style="font-weight: bold; border-top: 1px solid #ccc; padding-top: 8px;">
-    <span class="label">Remaining Balance:</span>
+    <span class="label">Pending amount:</span>
     <span class="value">Rs.${(Number(monthlyFee) - Number(amountPaid)).toFixed(2)}</span>
   </div>
   <div class="total-row">
@@ -439,7 +439,7 @@ export default function PersonsPage() {
               <th>Person Name</th>
               <th>Address</th>
               <th>Monthly Fee</th>
-              <th>Remaining Balance</th>
+              <th>Pending amount</th>
               <th>Status</th>
             </tr>
           </thead>
@@ -623,7 +623,7 @@ export default function PersonsPage() {
                       Monthly Fee
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Remaining Balance
+                      Pending Amount
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status

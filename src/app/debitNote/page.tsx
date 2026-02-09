@@ -22,6 +22,88 @@ export default function CashReceivedPage() {
 	const [areaQuery, setAreaQuery] = useState("");
 	const [areaSuggestions, setAreaSuggestions] = useState<any[]>([]);
 
+	// Computed rows for display in table (one per person for selected month)
+const [displayRows, setDisplayRows] = useState<any[]>([]);
+
+// Helper to get month string from date (YYYY-MM)
+const getMonthString = (date: Date) => date.toISOString().slice(0, 7);
+
+// Helper to get previous month (YYYY-MM)
+const getPreviousMonth = (month: string) => {
+  const [year, mon] = month.split('-').map(Number);
+  const prevDate = new Date(year, mon - 1, 1); // Subtract 1 month
+  prevDate.setMonth(prevDate.getMonth() - 1);
+  return getMonthString(prevDate);
+};
+
+// Compute display rows when area or month changes
+useEffect(() => {
+  if (!selectedArea || personsInArea.length === 0) {
+    setDisplayRows([]);
+    return;
+  }
+
+  const rows = personsInArea.map((person) => {
+    const monthlyFee = Number(person.amount || 0);
+    const personRecords = records.filter((r: any) => r.personId === person._id);
+
+    const startMonth = getMonthString(new Date(person.createdAt || new Date()));
+
+    // Decide last month to calculate till
+    let endMonth: string;
+    if (selectedMonth) {
+      endMonth = selectedMonth;
+    } else {
+      const today = new Date();
+      const currentMonthStr = getMonthString(today);
+      endMonth = getPreviousMonth(currentMonthStr);
+    }
+
+    const totalMonths = calculateMonthsBetween(startMonth, endMonth);
+    const totalExpected = monthlyFee * totalMonths;
+
+    const totalPaid = personRecords
+      .filter((r: any) => {
+        const rMonth = r.month || getMonthString(new Date(r.createdAt));
+        return rMonth <= endMonth;
+      })
+      .reduce((sum: number, r: any) => sum + Number(r.amount || 0), 0);
+
+    const pending = Math.max(0, totalExpected - totalPaid);
+
+    // amount paid ONLY in selected month
+    let paidThisMonth = 0;
+    if (selectedMonth) {
+      paidThisMonth = personRecords
+        .filter((r: any) => r.month === selectedMonth)
+        .reduce((sum: number, r: any) => sum + Number(r.amount || 0), 0);
+    }
+
+    return {
+      _id: person._id + "_computed_" + (selectedMonth || "all"),
+      personId: person._id,
+      personName: person.name,
+      connectionNumber: person.connectionNumber || "-",
+      personAddress: person.address || "-",
+      personMonthlyFee: monthlyFee,
+      month: selectedMonth || "Up to now",
+      amount: paidThisMonth,
+      remainingAfterPayment: pending,
+      isComputed: paidThisMonth === 0,
+    };
+  });
+
+  setDisplayRows(rows);
+}, [selectedArea, selectedMonth, personsInArea, records]);
+
+
+// Helper function to calculate number of months between two YYYY-MM strings
+const calculateMonthsBetween = (start: string, end: string) => {
+  const [startYear, startMonth] = start.split('-').map(Number);
+  const [endYear, endMonth] = end.split('-').map(Number);
+  return (endYear - startYear) * 12 + (endMonth - startMonth) + 1;  // Inclusive
+};
+
 	useEffect(() => {
 		const setup = async () => {
 			const pouch = await initDB();
@@ -579,8 +661,7 @@ const addRecord = async () => {
 					</div>
 				)}
 			</div>
-
-			<div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mt-6">
+<div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mt-6">
   <div className="flex justify-between items-center mb-4">
     <h2 className="text-lg font-semibold">
       Records
@@ -591,7 +672,7 @@ const addRecord = async () => {
       )}
     </h2>
     
-    {records.length > 0 && (
+    {displayRows.length > 0 && (
       <button
         onClick={printRecords}
         className="px-4 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition"
@@ -601,7 +682,7 @@ const addRecord = async () => {
     )}
   </div>
 
-  {records.length === 0 ? (
+  {displayRows.length === 0 ? (
     <div className="text-sm text-gray-500">No records for selected area</div>
   ) : (
     <div className="overflow-x-auto">
@@ -619,28 +700,30 @@ const addRecord = async () => {
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
-          {filteredRecords.map((r: any) => (
-            <tr key={r._id} className="hover:bg-gray-50">
-              <td className="px-6 py-3 text-sm text-gray-900">{r.personName}</td>
-              <td className="px-6 py-3 text-sm text-gray-900">{r.connectionNumber || '-'}</td>
-              <td className="px-6 py-3 text-sm text-gray-500">{r.personAddress || '-'}</td>
+          {displayRows.map((row: any) => (
+            <tr key={row._id} className="hover:bg-gray-50">
+              <td className="px-6 py-3 text-sm text-gray-900">{row.personName}</td>
+              <td className="px-6 py-3 text-sm text-gray-900">{row.connectionNumber || '-'}</td>
+              <td className="px-6 py-3 text-sm text-gray-500">{row.personAddress || '-'}</td>
               <td className="px-6 py-3 text-sm text-gray-500">
-                {r.personMonthlyFee ? `Rs.${Number(r.personMonthlyFee).toFixed(2)}` : '-'}
+                Rs.{Number(row.personMonthlyFee).toFixed(2)}
               </td>
-              <td className="px-6 py-3 text-sm text-gray-500">{r.month || '-'}</td>
+              <td className="px-6 py-3 text-sm text-gray-500">{row.month || '-'}</td>
               <td className="px-6 py-3 text-sm text-gray-900 font-medium">
-                Rs.${Number(r.amount).toFixed(2)}
+                Rs.{Number(row.amount).toFixed(2)}
               </td>
               <td className="px-6 py-3 text-sm text-red-600 font-semibold">
-                Rs.${Number(r.remainingAfterPayment ?? 0).toFixed(2)}
+                Rs.{Number(row.remainingAfterPayment).toFixed(2)}
               </td>
               <td className="px-6 py-3 text-sm">
-                <button
-                  onClick={() => deleteRecord(r)}
-                  className="text-red-600 hover:text-red-800 hover:bg-red-50 px-3 py-1 rounded transition-colors duration-200"
-                >
-                  Delete
-                </button>
+                {!row.isComputed && (
+                  <button
+                    onClick={() => deleteRecord(row)}
+                    className="text-red-600 hover:text-red-800 hover:bg-red-50 px-3 py-1 rounded transition-colors duration-200"
+                  >
+                    Delete
+                  </button>
+                )}
               </td>
             </tr>
           ))}
