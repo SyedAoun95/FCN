@@ -23,7 +23,7 @@ const menuItems = [
   { name: "Add Area", icon: faLocationDot, href: "/areas" },
   { name: "Add Person", icon: faUserPlus, href: "/persons" },
   { name: "Internet Entry", icon: faGlobe, href: "/Internet-entery-page" },
-  { name: "Remove Person", icon: faUserMinus, href: "/remove-person" },
+  { name: "Remove Person", icon: faUserMinus, href: "/remove" },
   { name: "Update Record", icon: faPenToSquare, href: "/update-record" },
   { name: "Find Record", icon: faSearch, href: "/searchperson" },
  

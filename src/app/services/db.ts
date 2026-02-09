@@ -140,34 +140,34 @@ export const initDB = async () => {
   };
 
   const deletePerson = async (person: any) => {
-    return localDB.remove(person);
-  };
+  try {
+    // Step 1: Delete the person document itself
+    await localDB.remove(person);
 
-  // ---------------------------
-  // REAL-TIME SEARCH (NAME OR NUMBER)
-  // ---------------------------
-  const searchPersons = async (query: string) => {
-    if (!query.trim()) return [];
-
-    const q = query.toLowerCase();
-
-    await localDB.createIndex({
-      index: { fields: ["type", "name", "connectionNumber"] },
-    });
-
-    const result = await localDB.find({
+    // Step 2: Find all debit records linked to this person
+    const debitsResult = await localDB.find({
       selector: {
-        type: "person",
-        $or: [
-          { name: { $regex: new RegExp(q, "i") } },
-          { connectionNumber: { $regex: new RegExp(q, "i") } },
-        ],
-      },
+        type: "debit",
+        personId: person._id
+      }
     });
 
-    return result.docs;
-  };
+    const debits = debitsResult.docs || [];
 
+    // Step 3: Delete each debit record one by one
+    for (const debit of debits) {
+      await localDB.remove(debit);
+    }
+
+    console.log(`Deleted person ${person._id} and ${debits.length} related debit records`);
+
+    // Optional: return useful info (you can use it in the UI if you want)
+    return { success: true, deletedDebits: debits.length };
+  } catch (err: any) {
+    console.error("Error during person deletion:", err);
+    throw new Error("Failed to delete person: " + (err?.message || "Unknown error"));
+  }
+};
   // ---------------------------
   // AGGREGATION HELPERS
   // ---------------------------
@@ -412,7 +412,7 @@ export const initDB = async () => {
     getPersonsByArea,
     updatePerson,
     deletePerson,
-    searchPersons,
+
     totalConnections,
     grandTotalRevenue,
     monthlyRevenue,
