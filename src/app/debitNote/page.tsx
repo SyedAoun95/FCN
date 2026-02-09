@@ -85,51 +85,121 @@ export default function CashReceivedPage() {
 			console.warn("failed to load records", e);
 		}
 	};
+// wokring version
+	// const addRecord = async () => {
+	// 	if (!db) return;
+	// 	if (!selectedArea) {
+	// 		alert("Please select an area");
+	// 		return;
+	// 	}
+	// 	if (!selectedPersonId) {
+	// 		alert("Please select a connection number (person)");
+	// 		return;
+	// 	}
+	// 	if (!selectedMonth) {
+	// 		alert("Please choose a month");
+	// 		return;
+	// 	}
+	// 	if (amount === "" || Number.isNaN(Number(amount)) || Number(amount) <= 0) {
+	// 		alert("Please enter a valid amount");
+	// 		return;
+	// 	}
 
-	const addRecord = async () => {
-		if (!db) return;
-		if (!selectedArea) {
-			alert("Please select an area");
-			return;
-		}
-		if (!selectedPersonId) {
-			alert("Please select a connection number (person)");
-			return;
-		}
-		if (!selectedMonth) {
-			alert("Please choose a month");
-			return;
-		}
-		if (amount === "" || Number.isNaN(Number(amount)) || Number(amount) <= 0) {
-			alert("Please enter a valid amount");
-			return;
-		}
+	// 	const doc: any = {
+	// 		_id: `debit_${selectedArea}_${selectedPersonId}_${Date.now()}`,
+	// 		type: "debit",
+	// 		areaId: selectedArea,
+	// 		personId: selectedPersonId,
+	// 		personName: selectedPersonName,
+	// 		personAddress: selectedPersonAddress, // Save address in record
+	// 		personMonthlyFee: selectedPersonFee, // Save monthly fee in record
+	// 		connectionNumber: connectionQuery, // Save connection number
+	// 		month: selectedMonth,
+	// 		amount: Number(amount),
+	// 		createdAt: new Date().toISOString(),
+	// 	};
 
-		const doc: any = {
-			_id: `debit_${selectedArea}_${selectedPersonId}_${Date.now()}`,
-			type: "debit",
-			areaId: selectedArea,
-			personId: selectedPersonId,
-			personName: selectedPersonName,
-			personAddress: selectedPersonAddress, // Save address in record
-			personMonthlyFee: selectedPersonFee, // Save monthly fee in record
-			connectionNumber: connectionQuery, // Save connection number
-			month: selectedMonth,
-			amount: Number(amount),
-			createdAt: new Date().toISOString(),
-		};
+	// 	try {
+	// 		await db.localDB.put(doc);
+	// 		await loadRecords(selectedArea);
+	// 		setAmount("");
+	// 		setSelectedMonth("");
+	// 	} catch (e: any) {
+	// 		console.error("failed to save record", e);
+	// 		alert(e?.message || "Failed to save record");
+	// 	}
+	// };
+// new test version start for add record 
+const addRecord = async () => {
+  if (!db || !selectedPersonId) return;
 
-		try {
-			await db.localDB.put(doc);
-			await loadRecords(selectedArea);
-			setAmount("");
-			setSelectedMonth("");
-		} catch (e: any) {
-			console.error("failed to save record", e);
-			alert(e?.message || "Failed to save record");
-		}
-	};
+  if (!selectedMonth) {
+    alert("Please select a month");
+    return;
+  }
+  if (amount === "" || Number(amount) <= 0) {
+    alert("Please enter a valid amount");
+    return;
+  }
 
+  try {
+    // 1. Get current person document
+    const person = personsInArea.find(p => p._id === selectedPersonId);
+    if (!person) return;
+
+    const monthlyFee = Number(person.amount || selectedPersonFee || 0);
+    const currentRemaining = Number(person.remainingBalance || 0);
+
+    // 2. Calculate new expected amount (monthly fee + carry forward)
+    const expectedThisMonth = monthlyFee + currentRemaining;
+
+    // 3. Calculate new remaining balance after this payment
+    const newRemainingBalance = expectedThisMonth - Number(amount);
+
+    // 4. Update the person document with new running balance
+    const updatedPerson = {
+      ...person,
+      remainingBalance: Math.max(0, newRemainingBalance),   // prevent negative
+      lastPaymentDate: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    await db.localDB.put(updatedPerson);   // Update person record
+
+    // 5. Save the debit/payment record
+    const doc = {
+      _id: `debit_${selectedArea}_${selectedPersonId}_${Date.now()}`,
+      type: "debit",
+      areaId: selectedArea,
+      personId: selectedPersonId,
+      personName: selectedPersonName,
+      personAddress: selectedPersonAddress,
+      personMonthlyFee: monthlyFee,
+      connectionNumber: connectionQuery,
+      month: selectedMonth,
+      amount: Number(amount),
+      expectedAmount: expectedThisMonth,        // ← New: store expected
+      remainingAfterPayment: newRemainingBalance, // ← New: store remaining
+      createdAt: new Date().toISOString(),
+    };
+
+    await db.localDB.put(doc);
+
+    // 6. Refresh data
+    await loadRecords(selectedArea);
+    await onAreaChange(selectedArea); // Refresh persons list to update remainingBalance
+
+    // Reset form
+    setAmount("");
+    setSelectedMonth("");
+
+    alert("Payment recorded successfully!");
+  } catch (e: any) {
+    console.error(e);
+    alert("Failed to save payment: " + e.message);
+  }
+};
+// new test version end for add record 
 	const deleteRecord = async (r: any) => {
 		if (!db) return;
 		try {
@@ -192,63 +262,128 @@ export default function CashReceivedPage() {
 	const totalPaidAllTime = selectedPersonRecords.reduce((s: number, r: any) => s + (Number(r.amount) || 0), 0);
 	const allTimeBalance = totalExpectedAllTime - totalPaidAllTime;
 
-	const printRecords = () => {
-		const printWindow = window.open('', '', 'width=1200,height=600');
-		if (!printWindow) return;
+	const filteredRecords = selectedMonth
+  ? records.filter((r: any) => r.month === selectedMonth)
+  : records;
 
-		const tableHTML = `
-			<!DOCTYPE html>
-			<html>
-			<head>
-				<title>Family Cable Network - Records</title>
-				<style>
-					* { margin: 0; padding: 0; }
-					body { font-family: Arial, sans-serif; padding: 20px; }
-					h1 { text-align: center; margin-bottom: 20px; font-size: 24px; }
-					table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-					thead { background-color: #f3f4f6; }
-					th { padding: 12px; text-align: left; font-weight: bold; border-bottom: 2px solid #d1d5db; font-size: 12px; }
-					td { padding: 10px 12px; border-bottom: 1px solid #e5e7eb; }
-					tr:hover { background-color: #f9fafb; }
-				</style>
-			</head>
-			<body>
-				<h1>Family Cable Network</h1>
-				<table>
-					<thead>
-						<tr>
-							<th>Person</th>
-							<th>Connection #</th>
-							<th>Address</th>
-							<th>Monthly Fee</th>
-							<th>Month</th>
-							<th>Amount Received</th>
+	// const printRecords = () => {
+	// 	const printWindow = window.open('', '', 'width=1200,height=600');
+	// 	if (!printWindow) return;
+
+	// 	const tableHTML = `
+	// 		<!DOCTYPE html>
+	// 		<html>
+	// 		<head>
+	// 			<title>Family Cable Network - Records</title>
+	// 			<style>
+	// 				* { margin: 0; padding: 0; }
+	// 				body { font-family: Arial, sans-serif; padding: 20px; }
+	// 				h1 { text-align: center; margin-bottom: 20px; font-size: 24px; }
+	// 				table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+	// 				thead { background-color: #f3f4f6; }
+	// 				th { padding: 12px; text-align: left; font-weight: bold; border-bottom: 2px solid #d1d5db; font-size: 12px; }
+	// 				td { padding: 10px 12px; border-bottom: 1px solid #e5e7eb; }
+	// 				tr:hover { background-color: #f9fafb; }
+	// 			</style>
+	// 		</head>
+	// 		<body>
+	// 			<h1>Family Cable Network</h1>
+	// 			<table>
+	// 				<thead>
+	// 					<tr>
+	// 						<th>Person</th>
+	// 						<th>Connection #</th>
+	// 						<th>Address</th>
+	// 						<th>Monthly Fee</th>
+	// 						<th>Month</th>
+	// 						<th>Amount Received</th>
 							
-						</tr>
-					</thead>
-					<tbody>
-						${records.map((r) => `
-							<tr>
-								<td>${r.personName}</td>
-								<td>${r.connectionNumber || '-'}</td>
-								<td>${r.personAddress || '-'}</td>
-								<td>$${Number(r.personMonthlyFee).toFixed(2)}</td>
-								<td>${r.month}</td>
-								<td>$${Number(r.amount).toFixed(2)}</td>
-							</tr>
-						`).join('')}
-					</tbody>
-				</table>
-				<script>
-					window.print();
-				</script>
-			</body>
-			</html>
-		`;
+	// 					</tr>
+	// 				</thead>
+	// 				<tbody>
+	// 					${records.map((r) => `
+	// 						<tr>
+	// 							<td>${r.personName}</td>
+	// 							<td>${r.connectionNumber || '-'}</td>
+	// 							<td>${r.personAddress || '-'}</td>
+	// 							<td>$${Number(r.personMonthlyFee).toFixed(2)}</td>
+	// 							<td>${r.month}</td>
+	// 							<td>$${Number(r.amount).toFixed(2)}</td>
+	// 						</tr>
+	// 					`).join('')}
+	// 				</tbody>
+	// 			</table>
+	// 			<script>
+	// 				window.print();
+	// 			</script>
+	// 		</body>
+	// 		</html>
+	// 	`;
 
-		printWindow.document.write(tableHTML);
-		printWindow.document.close();
-	};
+	// 	printWindow.document.write(tableHTML);
+	// 	printWindow.document.close();
+	// };
+	const printRecords = () => {
+  const printWindow = window.open('', '', 'width=1200,heisght=600');
+  if (!printWindow) return;
+
+  const tableHTML = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Family Cable Network - Records</title>
+      <style>
+        * { margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        h1 { text-align: center; margin-bottom: 20px; font-size: 24px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        thead { background-color: #f3f4f6; }
+        th { padding: 12px; text-align: left; font-weight: bold; border-bottom: 2px solid #d1d5db; font-size: 12px; }
+        td { padding: 10px 12px; border-bottom: 1px solid #e5e7eb; }
+        tr:hover { background-color: #f9fafb; }
+        .amount { text-align: right; }
+        .pending { color: #dc2626; font-weight: bold; text-align: right; }
+      </style>
+    </head>
+    <body>
+      <h1>Family Cable Network</h1>
+      <table>
+        <thead>
+          <tr>
+            <th>Person</th>
+            <th>Connection #</th>
+            <th>Address</th>
+            <th>Monthly Fee</th>
+            <th>Month</th>
+            <th class="amount">Amount Received</th>
+            <th class="amount">Pending / Balance Due</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${records.map((r) => `
+            <tr>
+              <td>${r.personName || '-'}</td>
+              <td>${r.connectionNumber || '-'}</td>
+              <td>${r.personAddress || '-'}</td>
+              <td class="amount">Rs.${Number(r.personMonthlyFee ?? 0).toFixed(2)}</td>
+              <td>${r.month || '-'}</td>
+              <td class="amount">Rs.${Number(r.amount ?? 0).toFixed(2)}</td>
+              <td class="pending">Rs.${Number(r.remainingAfterPayment ?? 0).toFixed(2)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+
+      <script>
+        window.print();
+      </script>
+    </body>
+    </html>
+  `;
+
+  printWindow.document.write(tableHTML);
+  printWindow.document.close();
+};
 
 	if (loading)
 		return (
@@ -446,63 +581,74 @@ export default function CashReceivedPage() {
 			</div>
 
 			<div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mt-6">
-				<h2 className="text-lg font-semibold mb-4">Records</h2>
-				{records.length === 0 ? (
-					<div className="text-sm text-gray-500">No records for selected area</div>
-				) : (
-					<div className="overflow-x-auto">
-						<table className="min-w-full divide-y divide-gray-200">
-							<thead className="bg-gray-50">
-								<tr>
-									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Person</th>
-									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Connection #</th>
-									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Address</th>
-									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Monthly Fee</th>
-									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Month</th>
-									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount Received</th>
-									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pending payment</th>
-									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-								</tr>
-							</thead>
-							<tbody className="bg-white divide-y divide-gray-200">
-								{records.map((r: any) => (
-									<tr key={r._id} className="hover:bg-gray-50">
-										<td className="px-6 py-3 text-sm text-gray-900">{r.personName}</td>
-										<td className="px-6 py-3 text-sm text-gray-900">{r.connectionNumber || '-'}</td>
-										<td className="px-6 py-3 text-sm text-gray-500">{r.personAddress || '-'}</td>
-										<td className="px-6 py-3 text-sm text-gray-500">
-											{r.personMonthlyFee ? `$${Number(r.personMonthlyFee).toFixed(2)}` : '-'}
-										</td>
-										<td className="px-6 py-3 text-sm text-gray-500">{r.month}</td>
-										<td className="px-6 py-3 text-sm text-gray-900 font-medium">${Number(r.amount).toFixed(2)}</td>
-										{(() => {
-											const rowMonth = r.month || (r.createdAt ? `${new Date(r.createdAt).getFullYear()}-${String(new Date(r.createdAt).getMonth() + 1).padStart(2, '0')}` : null);
-											const paidForRow = records
-												.filter((rec: any) => rec.personId === r.personId && (rec.month || (rec.createdAt ? `${new Date(rec.createdAt).getFullYear()}-${String(new Date(rec.createdAt).getMonth() + 1).padStart(2, '0')}` : null)) === rowMonth)
-												.reduce((s: number, rec: any) => s + (Number(rec.amount) || 0), 0);
-											const expected = Number(r.personMonthlyFee ?? selectedPersonFee) || 0;
-											const pending = Math.max(0, expected - paidForRow);
-											return (
-												<>
-													<td className="px-6 py-3 text-sm text-red-600 font-semibold">Rs. {Number(pending).toFixed(2)}</td>
-													<td className="px-6 py-3 text-sm">
-														<button 
-															onClick={() => deleteRecord(r)} 
-															className="text-red-600 hover:text-red-800 hover:bg-red-50 px-3 py-1 rounded transition-colors duration-200"
-														>
-															Delete
-														</button>
-													</td>
-												</>
-											);
-										})()}
-									</tr>
-								))}
-							</tbody>
-						</table>
-					</div>
-				)}
-			</div>
+  <div className="flex justify-between items-center mb-4">
+    <h2 className="text-lg font-semibold">
+      Records
+      {selectedMonth && (
+        <span className="text-sm font-normal text-gray-500 ml-2">
+          (for {new Date(selectedMonth + "-01").toLocaleString('default', { month: 'long', year: 'numeric' })})
+        </span>
+      )}
+    </h2>
+    
+    {records.length > 0 && (
+      <button
+        onClick={printRecords}
+        className="px-4 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition"
+      >
+        Print Monthly list
+      </button>
+    )}
+  </div>
+
+  {records.length === 0 ? (
+    <div className="text-sm text-gray-500">No records for selected area</div>
+  ) : (
+    <div className="overflow-x-auto">
+      <table className="min-w-full divide-y divide-gray-200">
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Person</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Connection #</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Address</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Monthly Fee</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Month</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount Received</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pending / Balance Due</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+          </tr>
+        </thead>
+        <tbody className="bg-white divide-y divide-gray-200">
+          {filteredRecords.map((r: any) => (
+            <tr key={r._id} className="hover:bg-gray-50">
+              <td className="px-6 py-3 text-sm text-gray-900">{r.personName}</td>
+              <td className="px-6 py-3 text-sm text-gray-900">{r.connectionNumber || '-'}</td>
+              <td className="px-6 py-3 text-sm text-gray-500">{r.personAddress || '-'}</td>
+              <td className="px-6 py-3 text-sm text-gray-500">
+                {r.personMonthlyFee ? `Rs.${Number(r.personMonthlyFee).toFixed(2)}` : '-'}
+              </td>
+              <td className="px-6 py-3 text-sm text-gray-500">{r.month || '-'}</td>
+              <td className="px-6 py-3 text-sm text-gray-900 font-medium">
+                Rs.${Number(r.amount).toFixed(2)}
+              </td>
+              <td className="px-6 py-3 text-sm text-red-600 font-semibold">
+                Rs.${Number(r.remainingAfterPayment ?? 0).toFixed(2)}
+              </td>
+              <td className="px-6 py-3 text-sm">
+                <button
+                  onClick={() => deleteRecord(r)}
+                  className="text-red-600 hover:text-red-800 hover:bg-red-50 px-3 py-1 rounded transition-colors duration-200"
+                >
+                  Delete
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )}
+</div>
 		</div>
 	);
 }

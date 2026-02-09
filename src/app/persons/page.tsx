@@ -35,6 +35,7 @@ export default function PersonsPage() {
     setSelectedArea(areaId);
     const allPersons = await db.getPersonsByArea(areaId);
     setPersons(allPersons);
+    console.log("New person added - check remainingBalance:", allPersons[allPersons.length - 1]);
   };
 
   const addPerson = async () => {
@@ -280,41 +281,46 @@ export default function PersonsPage() {
           Time: ${new Date().toLocaleTimeString()}
         </div>
         
-        <div class="receipt-details">
-          <div class="detail-row">
-            <span class="label">Receipt No:</span>
-            <span class="value">${personConnectionNumber}-${Date.now().toString().slice(-6)}</span>
-          </div>
-          <div class="detail-row">
-            <span class="label">Connection #:</span>
-            <span class="value">${personConnectionNumber}</span>
-          </div>
-          <div class="detail-row">
-            <span class="label">Person Name:</span>
-            <span class="value">${personName}</span>
-          </div>
-          <div class="detail-row">
-            <span class="label">Area:</span>
-            <span class="value">${selectedAreaName}</span>
-          </div>
-          <div class="detail-row">
-            <span class="label">Address:</span>
-            <span class="value">${personAddress}</span>
-          </div>
-          <div class="detail-row">
-            <span class="label">Registration Fee:</span>
-            <span class="value">0.00</span>
-          </div>
-          <div class="detail-row">
-            <span class="label">Monthly Fee:</span>
-            <span class="value">Rs.${typeof monthlyFee === 'string' ? parseFloat(monthlyFee).toFixed(2) : monthlyFee.toFixed(2)}</span>
-          </div>
-        </div>
+       <div class="receipt-details">
+  <div class="detail-row">
+    <span class="label">Receipt No:</span>
+    <span class="value">${personConnectionNumber}-${Date.now().toString().slice(-6)}</span>
+  </div>
+  <div class="detail-row">
+    <span class="label">Connection #:</span>
+    <span class="value">${personConnectionNumber}</span>
+  </div>
+  <div class="detail-row">
+    <span class="label">Person Name:</span>
+    <span class="value">${personName}</span>
+  </div>
+  <div class="detail-row">
+    <span class="label">Area:</span>
+    <span class="value">${selectedAreaName}</span>
+  </div>
+  <div class="detail-row">
+    <span class="label">Address:</span>
+    <span class="value">${personAddress}</span>
+  </div>
+  <div class="detail-row">
+    <span class="label">Monthly Fee:</span>
+    <span class="value">Rs.${Number(monthlyFee).toFixed(2)}</span>
+  </div>
+  <div class="detail-row">
+    <span class="label">Amount Paid:</span>
+    <span class="value">Rs.${Number(amountPaid).toFixed(2)}</span>
+  </div>
+  <div class="detail-row" style="font-weight: bold; border-top: 1px solid #ccc; padding-top: 8px;">
+    <span class="label">Remaining Balance:</span>
+    <span class="value">Rs.${(Number(monthlyFee) - Number(amountPaid)).toFixed(2)}</span>
+  </div>
+  <div class="total-row">
+  <span>Balance Due:</span>
+  <span>Rs.${(Number(monthlyFee) - Number(amountPaid)).toFixed(2)}</span>
+</div>
+</div>
         
-        <div class="total-row">
-          <span>Monthly Charge:</span>
-          <span>Rs.${typeof monthlyFee === 'string' ? parseFloat(monthlyFee).toFixed(2) : monthlyFee.toFixed(2)}</span>
-        </div>
+       
         
         <div class="thank-you">
           Thank you for registering!
@@ -411,8 +417,10 @@ export default function PersonsPage() {
                 <td>${person.connectionNumber ?? '-'}</td>
                 <td>${person.name}</td>
                 <td>${person.address && person.address !== '-' ? person.address : '-'}</td>
-                <td>Rs.${person.monthlyFee !== undefined ? Number(person.monthlyFee).toFixed(2) : '0.00'}</td>
-                <td>Rs.${person.remainingBalance !== undefined ? Number(person.remainingBalance).toFixed(2) : '0.00'}</td>
+                <td>Rs.${person.amount !== undefined ? Number(person.amount).toFixed(2) : '0.00'}</td>  
+<td style="color: ${Number(person.remainingBalance || 0) > 0 ? '#dc2626' : '#6b7280'}; font-weight: bold;">
+  Rs.${Number(person.remainingBalance || 0).toFixed(2)}
+</td>
                 <td>Active</td>
               </tr>
             `).join('')}
@@ -607,12 +615,14 @@ export default function PersonsPage() {
                           {person.address && person.address !== '-' ? person.address : '-'}
                         </div>
                       </td>
+                     <td className="px-6 py-4 whitespace-nowrap">
+  <div className="text-sm text-gray-500">{person.amount ? `Rs.${Number(person.amount).toFixed(2)}` : '-'}</div>
+</td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">{person.amount ? `$${Number(person.amount).toFixed(2)}` : '-'}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">Rs.{(person.remainingBalance || 0).toFixed(2)}</div> {/* Fallback to 0 if undefined */}
-                      </td>
+  <div className={`text-sm font-medium ${Number(person.remainingBalance || 0) > 0 ? 'text-red-600' : 'text-gray-500'}`}>
+    Rs.{Number(person.remainingBalance || 0).toFixed(2)}
+  </div>
+</td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                           Active

@@ -1,6 +1,7 @@
 // app/layout.tsx
 import "./globals.css";
 import ClientLayoutWrapper from "./components/ClientLayoutWrapper";
+import DarkModeToggle from "../app/components/DarkModeToggle";
 
 export const metadata = {
   title: "FCN || the brand",

@@ -40,7 +40,7 @@ const Sidebar: React.FC = () => {
   return (
     <div className="w-64 bg-white shadow-xl border-r border-gray-200">
       <div className="p-6 border-b border-gray-200">
-        <h2 className="text-lg font-semibold text-gray-800">Management</h2>
+        <h2 className="text-lg font-semibold text-gray-800">FCN-Management</h2>
         <p className="text-sm text-gray-500 mt-1">Control Center</p>
       </div>
       <nav className="mt-6">

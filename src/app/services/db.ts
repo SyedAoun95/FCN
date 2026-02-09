@@ -75,46 +75,50 @@ export const initDB = async () => {
   // PERSON CRUD
   // ---------------------------
   const createPerson = async (
-    name: string,
-    areaId: string,
-    connectionNumber?: string,
-    amount?: number,
-    address?: string
-  ) => {
-    if (!name.trim() || !areaId) throw new Error("Invalid input");
+  name: string,
+  areaId: string,
+  connectionNumber?: string,
+  amount?: number,          // monthly fee
+  address?: string,
+  amountPaid: number = 0,   // new parameter with default 0
+  remainingBalance?: number // new parameter (optional, but we'll calculate it)
+) => {
+  if (!name.trim() || !areaId) throw new Error("Invalid input");
 
-    const conn = connectionNumber !== undefined ? String(connectionNumber).trim() : "";
+  const conn = connectionNumber !== undefined ? String(connectionNumber).trim() : "";
 
-    if (!conn) {
-      throw new Error('Connection number is required for a person');
-    }
+  if (!conn) {
+    throw new Error('Connection number is required for a person');
+  }
 
-    // Ensure uniqueness of connectionNumber across persons
-    await localDB.createIndex({ index: { fields: ['type', 'connectionNumber'] } });
-    const existing = await localDB.find({ selector: { type: 'person', connectionNumber: conn } });
-    if (existing.docs && existing.docs.length > 0) {
-      throw new Error('Connection number already assigned to another person');
-    }
+  // Ensure uniqueness of connectionNumber across persons
+  await localDB.createIndex({ index: { fields: ['type', 'connectionNumber'] } });
+  const existing = await localDB.find({ selector: { type: 'person', connectionNumber: conn } });
+  if (existing.docs && existing.docs.length > 0) {
+    throw new Error('Connection number already assigned to another person');
+  }
 
-    const doc: any = {
-      _id: `person_${areaId}_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
-      type: "person",
-      name,
-      areaId,
-      connectionNumber: conn,
-      createdAt: new Date().toISOString(),
-    };
+  // Calculate remainingBalance if not provided (fallback)
+  const monthlyFeeNum = Number(amount || 0);
+  const paidNum = Number(amountPaid || 0);
+  const calculatedRemaining = monthlyFeeNum - paidNum;
 
-    if (amount !== undefined && !Number.isNaN(Number(amount))) {
-      doc.amount = Number(amount);
-    }
-
-    if (address !== undefined && address.trim() !== "") {
-      doc.address = address.trim();
-    }
-
-    return localDB.put(doc);
+  const doc: any = {
+    _id: `person_${areaId}_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+    type: "person",
+    name: name.trim(),
+    areaId,
+    connectionNumber: conn,
+    amount: monthlyFeeNum,                    // monthly fee
+    address: address?.trim() || '-',          // safe default
+    amountPaid: paidNum,                      // initial payment
+    remainingBalance: Number(remainingBalance ?? calculatedRemaining),  // ← THIS IS THE FIX
+    status: 'active',
+    createdAt: new Date().toISOString(),
   };
+
+  return localDB.put(doc);
+};
 
   const getPersonsByArea = async (areaId: string) => {
     await localDB.createIndex({
