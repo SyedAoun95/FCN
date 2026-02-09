@@ -151,7 +151,7 @@ export default function DefaulterListsPage() {
                 <th>Connection Number</th>
                 <th>Unpaid Months</th>
                 <th>Accumulated Balance</th>
-                <th>Current Month Balance</th> <!-- Added header for current month's balance -->
+                <th>Pending / Balance Due</th> <!-- Added header for current month's balance -->
               </tr>
             </thead>
             <tbody>
@@ -227,7 +227,7 @@ export default function DefaulterListsPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Connection Number</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unpaid Months</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Accumulated Balance</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Month Balance</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pending / Balance Due</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
