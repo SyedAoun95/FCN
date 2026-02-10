@@ -2,18 +2,25 @@
   "name": "my-project",
   "version": "0.1.0",
   "private": true,
-  "scripts": {
+  "main": "main.js",
+  "homepage": "./",
+ "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+
+    
+    "electron:dev": "concurrently \"cross-env BROWSER=none NEXT_TURBOPACK=0 npm run dev\" \"wait-on http://localhost:3000 && electron .\"",
+
+ 
+    "electron:build": "npm run build && electron-builder"
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^7.1.0",
     "@fortawesome/free-solid-svg-icons": "^7.1.0",
     "@fortawesome/react-fontawesome": "^3.1.1",
     "axios": "^1.13.2",
-    "framer-motion": "^12.33.0",
     "next": "16.0.5",
     "postcss": "^8.5.6",
     "pouchdb": "^9.0.0",
@@ -29,10 +36,35 @@
     "@types/pouchdb": "^6.4.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/webpack": "^5.28.5",
     "babel-plugin-react-compiler": "1.0.0",
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
+    "electron": "^40.2.1",
+    "electron-builder": "^26.7.0",
     "eslint": "^9",
     "eslint-config-next": "16.0.5",
     "tailwindcss": "^4.1.17",
-    "typescript": "^5"
+    "typescript": "^5",
+    "wait-on": "^9.0.3"
+  },
+ "build": {
+    "appId": "com.fcn.management",
+    "productName": "FCN Management",
+    "files": [
+      "out/**/*",
+      "main.js",
+      "node_modules/**/*"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "win": {
+      "target": "nsis"
+    }
   }
 }
+
