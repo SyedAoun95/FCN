@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import React, { useState } from "react";
+// import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { initDB } from "../services/db";
 
 export default function LoginPage() {
@@ -15,23 +16,41 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   // test code start 
+// const [showServerConfig, setShowServerConfig] = useState(false);
+
+// const [serverUrl, setServerUrl] = useState(
+//   localStorage.getItem("server_url") || "http://192.168.1.116:5984"
+// );
+
+// const [serverDB, setServerDB] = useState(
+//   localStorage.getItem("server_db") || "db_fcn"
+// );
+
+// const [serverUser, setServerUser] = useState(
+//   localStorage.getItem("server_user") || "admin"
+// );
+
+// const [serverPass, setServerPass] = useState(
+//   localStorage.getItem("server_pass") || "512141"
+// );
 const [showServerConfig, setShowServerConfig] = useState(false);
 
-const [serverUrl, setServerUrl] = useState(
-  localStorage.getItem("server_url") || "http://192.168.1.116:5984"
-);
+const [serverUrl, setServerUrl] = useState("http://192.168.1.116:5984");
+const [serverDB, setServerDB] = useState("db_fcn");
+const [serverUser, setServerUser] = useState("admin");
+const [serverPass, setServerPass] = useState("512141");
 
-const [serverDB, setServerDB] = useState(
-  localStorage.getItem("server_db") || "db_fcn"
-);
+useEffect(() => {
+  const savedUrl = localStorage.getItem("server_url");
+  const savedDB = localStorage.getItem("server_db");
+  const savedUser = localStorage.getItem("server_user");
+  const savedPass = localStorage.getItem("server_pass");
 
-const [serverUser, setServerUser] = useState(
-  localStorage.getItem("server_user") || "admin"
-);
-
-const [serverPass, setServerPass] = useState(
-  localStorage.getItem("server_pass") || "512141"
-);
+  if (savedUrl) setServerUrl(savedUrl);
+  if (savedDB) setServerDB(savedDB);
+  if (savedUser) setServerUser(savedUser);
+  if (savedPass) setServerPass(savedPass);
+}, []);
 
   // test code end
 
@@ -58,6 +77,10 @@ const [serverPass, setServerPass] = useState(
           console.log('Login successful, redirecting...'); // Debugging log
           localStorage.setItem("role", user.role);
           localStorage.setItem("username", user.username);
+          localStorage.setItem("server_url", serverUrl);
+localStorage.setItem("server_db", serverDB);
+localStorage.setItem("server_user", serverUser);
+localStorage.setItem("server_pass", serverPass);
           if (user.role === 'admin') {
             router.push("/dashboard");
           } else {
